@@ -5,9 +5,10 @@ import {
   withDangerousMod,
   withInfoPlist,
 } from "@expo/config-plugins";
-import { generateOverrides } from "../api";
+import { generateOverrides, resolveFlagsToInvert } from "../api";
 import pkg from "../../package.json";
 import { withFlaggedAutolinking } from "./withFlaggedAutolinking";
+import { mergeSets } from "../api/mergeSets";
 
 const withAndroidBuildFlags: ConfigPlugin<{ flags: string[] }> = (
   config,
@@ -51,10 +52,18 @@ const withAppleBuildFlags: ConfigPlugin<{ flags: string[] }> = (
 const withBundleFlags: ConfigPlugin<{ flags: string[] }> = (config, props) => {
   return withDangerousMod(config, [
     "ios", // not platform-specific, but need to specify
-    async (config) => {
+    async (modConfig) => {
       const { flags } = props;
-      await generateOverrides({ flagsToEnable: new Set(flags) });
-      return config;
+      let flagsToEnable = new Set(flags);
+      const invertable = await resolveFlagsToInvert(config);
+      if (invertable.flagsToEnable.size > 0) {
+        flagsToEnable = mergeSets(flagsToEnable, invertable.flagsToEnable);
+      }
+      await generateOverrides({
+        flagsToEnable,
+        flagsToDisable: invertable.flagsToDisable,
+      });
+      return modConfig;
     },
   ]);
 };

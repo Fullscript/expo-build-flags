@@ -77,6 +77,21 @@ In order to enable this you need to pass `flaggedAutolinking: true` as an option
 
 Locally-referenced modules aren't currently supported (until [this 'exclude' exclusion](https://github.com/expo/expo/blob/24d5ae5f288013df19ac09a3406c6a507d781ddb/packages/expo-modules-autolinking/src/autolinking/findModules.ts#L52) can be overridden).
 
+### Invert flag value with condition
+
+You can invert the default flag value set in flags.yml by specifying a matcher with `invertFor`, example:
+
+```yaml
+flags:
+  featureOnForSpecificBundleId:
+    value: false
+    invertFor:
+      bundleId:
+        - com.example.app.special
+```
+
+With the preceding config and the expo config-plugin installed, the `featureOnForSpecificBundleId` flag is true for native builds that have the matching bundleId. This inversion only applies during a new native build with expo prebuild. To invert the flag during development you should still use the command line tooling.
+
 ## Goals
 
 - [x] allow defining a base set of flags that are available at runtime in one place
@@ -92,3 +107,5 @@ Locally-referenced modules aren't currently supported (until [this 'exclude' exc
 - [x] add android integration spec for flagged autolinking
 - [ ] cleanup flags.yml module declaration (confirm branch allow workflow makes sense, handle multiple flags)
 - [ ] doc site & readme cleanup to reference
+- [ ] add doc for testing with jest
+- [ ] add note about typechecking & regen
