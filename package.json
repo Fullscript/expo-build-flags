@@ -1,8 +1,8 @@
 {
   "name": "expo-build-flags",
-  "version": "0.7.0",
-  "repository": "https://github.com/sterlingwes/expo-build-flags",
-  "author": "Wes Johnson <wes@swj.io>",
+  "version": "0.8.0",
+  "repository": "https://github.com/fullscript/expo-build-flags",
+  "author": "Wes Johnson <wes.johnson@fullscript.com>",
   "license": "MIT",
   "bin": {
     "build-flags": "bin/build-flags.sh",
