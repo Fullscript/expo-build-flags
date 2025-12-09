@@ -44,9 +44,14 @@ export const resolveFlagsToInvert = async (expoConfig: ExpoConfig) => {
     const invertFor = flagConfig.invertFor;
 
     if (invertFor.bundleId) {
-      const bundleId =
-        expoConfig.ios?.bundleIdentifier || expoConfig.android?.package;
-      if (!bundleId || !invertFor.bundleId.includes(bundleId)) {
+      const bundleIds = [
+        expoConfig.ios?.bundleIdentifier,
+        expoConfig.android?.package,
+      ].filter(Boolean);
+      if (
+        !bundleIds.length ||
+        !invertFor.bundleId.find((bundleId) => bundleIds.includes(bundleId))
+      ) {
         return;
       }
     }

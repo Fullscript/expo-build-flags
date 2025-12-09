@@ -16,3 +16,9 @@ flags:
       team: "growth"
     modules:
       - "react-native-mmkv"
+  invertableFeature:
+    value: false
+    invertFor:
+      bundleId:
+        - com.my.app.apple
+        - com.my.app.android
