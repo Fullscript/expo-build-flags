@@ -9,6 +9,14 @@ export const getOptionValue = (args: string[], option: string): string | undefin
   return index !== -1 ? args[index + 1] : undefined;
 };
 
+export const shouldSkip = (envKey: string | undefined): boolean => {
+  if (envKey && process.env[envKey] !== undefined) {
+    console.log(`Skipping build-flags override because ${envKey} is set in environment`);
+    return true;
+  }
+  return false;
+};
+
 export const parseArgs = (args: string[]) => {
   let command;
   const flagsToDisable = new Set<string>();
@@ -101,10 +109,7 @@ const run = async () => {
   }
 
   if (command === "override") {
-    if (skipIfEnv && process.env[skipIfEnv] !== undefined) {
-      console.log(
-        `Skipping build-flags override because ${skipIfEnv} is set in environment`
-      );
+    if (shouldSkip(skipIfEnv)) {
       return;
     }
     await generateOverrides({ flagsToEnable, flagsToDisable });
