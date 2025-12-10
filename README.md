@@ -16,6 +16,8 @@ The arguments after the override command are the flags you want to `+` enable or
 
 You can run `yarn build-flags ota-override` instead of "override" to do the same but also consider the branch name in two supported CI environments: Github and Gitlab. Use the `ota.branches` array in the flags.yml to setup that matching and branch-based enablement.
 
+Use `--skip-if-env <ENV_VAR>` to skip the override command when a certain environment variable is set. This can be useful in CI job runs.
+
 ### Set Flags in CI & for Static Builds
 
 To set flags for EAS builds, set the `EXPO_BUILD_FLAGS` environment variable in `eas.json` for your profile. This value will be available to the config plugin at build time in EAS when you add it to your `app.json` plugins array:

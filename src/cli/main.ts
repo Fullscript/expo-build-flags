@@ -4,11 +4,27 @@ import { readFile, writeFile } from "fs/promises";
 import { BuildFlags } from "../api/BuildFlags";
 import { generateOverrides } from "../api/generateOverrides";
 
-const parseArgs = (args: string[]) => {
+export const getOptionValue = (args: string[], option: string): string | undefined => {
+  const index = args.indexOf(option);
+  return index !== -1 ? args[index + 1] : undefined;
+};
+
+export const parseArgs = (args: string[]) => {
   let command;
   const flagsToDisable = new Set<string>();
   const flagsToEnable = new Set<string>();
-  args.slice(2).forEach((arg) => {
+
+  const skipIfEnv = getOptionValue(args, "--skip-if-env");
+
+  const skipIfEnvIndex = args.indexOf("--skip-if-env");
+  const filteredArgs = args
+    .slice(2)
+    .filter((_, i) => {
+      const originalIndex = i + 2;
+      return originalIndex !== skipIfEnvIndex && originalIndex !== skipIfEnvIndex + 1;
+    });
+
+  filteredArgs.forEach((arg) => {
     if (arg.startsWith("-")) {
       flagsToDisable.add(arg.replace("-", ""));
       return;
@@ -21,18 +37,22 @@ const parseArgs = (args: string[]) => {
 
     command = arg;
   });
-  return { command, flagsToDisable, flagsToEnable };
+
+  return { command, flagsToDisable, flagsToEnable, skipIfEnv };
 };
 
 const printHelp = (command?: string) => {
   if (command) {
     console.error(`Unknown command: ${command}`);
   }
-  console.log(`Usage: build-flags [command] [flags]
+  console.log(`Usage: build-flags [command] [options] [flags]
   Commands:
     init          Initialize flags.yml and buildFlags.ts for the project in the current directory
     override      Override default flags with provided flag arguments: +flag to enable, -flag to disable
     ota-override  Override default flags like "override" but also consider branch matching rules
+
+  Options:
+    --skip-if-env <ENV_VAR>  Skip execution if the specified environment variable is set
   `);
 };
 
@@ -71,7 +91,9 @@ const initFlagsFile = async () => {
 };
 
 const run = async () => {
-  const { command, flagsToDisable, flagsToEnable } = parseArgs(process.argv);
+  const { command, flagsToDisable, flagsToEnable, skipIfEnv } = parseArgs(
+    process.argv
+  );
 
   if (command === "init") {
     await initFlagsFile();
@@ -79,6 +101,12 @@ const run = async () => {
   }
 
   if (command === "override") {
+    if (skipIfEnv && process.env[skipIfEnv] !== undefined) {
+      console.log(
+        `Skipping build-flags override because ${skipIfEnv} is set in environment`
+      );
+      return;
+    }
     await generateOverrides({ flagsToEnable, flagsToDisable });
     return;
   }
