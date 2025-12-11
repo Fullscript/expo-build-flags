@@ -103,15 +103,16 @@ const run = async () => {
     process.argv
   );
 
+  if (shouldSkip(skipIfEnv)) {
+    return;
+  }
+  
   if (command === "init") {
     await initFlagsFile();
     return;
   }
 
   if (command === "override") {
-    if (shouldSkip(skipIfEnv)) {
-      return;
-    }
     await generateOverrides({ flagsToEnable, flagsToDisable });
     return;
   }
