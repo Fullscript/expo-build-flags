@@ -98,7 +98,9 @@ function assertGradleProjectExcludesModules() {
         },
       },
       (error, stdout, stderr) => {
-        console.log(stdout);
+        console.log("error:", error ?? "none");
+        console.log("stdout:", stdout ?? "empty");
+        console.log("stderr:", stderr ?? "empty");
 
         if (!stdout.includes("+--- Project ':app'")) {
           reject(
