@@ -18,7 +18,7 @@ export const parseArgs = (args: string[]) => {
   const flagsToDisable = new Set<string>();
   const flagsToEnable = new Set<string>();
 
-  const argsCopy = [...args].slice(2);
+  const argsCopy = args.slice(2);
   const skipIfEnvIndex = argsCopy.indexOf("--skip-if-env");
   if (skipIfEnvIndex !== -1) {
     skipIfEnv = argsCopy[skipIfEnvIndex + 1];
