@@ -1,22 +1,5 @@
 import { describe, it, expect } from "@jest/globals";
-import { getOptionValue, parseArgs } from "./main";
-
-describe("getOptionValue", () => {
-  it("should return the value after the option", () => {
-    const args = ["yarn", "build-flags", "--skip-if-env", "EAS_BUILD"];
-    expect(getOptionValue(args, "--skip-if-env")).toBe("EAS_BUILD");
-  });
-
-  it("should return undefined if option is not present", () => {
-    const args = ["yarn", "build-flags", "override", "+flag"];
-    expect(getOptionValue(args, "--skip-if-env")).toBeUndefined();
-  });
-
-  it("should return undefined if option is last argument (no value)", () => {
-    const args = ["yarn", "build-flags","+flag", "--skip-if-env"];
-    expect(getOptionValue(args, "--skip-if-env")).toBeUndefined();
-  });
-});
+import { parseArgs } from "./main";
 
 describe("parseArgs", () => {
   describe("command parsing", () => {

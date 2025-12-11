@@ -4,11 +4,6 @@ import { readFile, writeFile } from "fs/promises";
 import { BuildFlags } from "../api/BuildFlags";
 import { generateOverrides } from "../api/generateOverrides";
 
-export const getOptionValue = (args: string[], option: string): string | undefined => {
-  const index = args.indexOf(option);
-  return index !== -1 ? args[index + 1] : undefined;
-};
-
 export const shouldSkip = (envKey: string | undefined): boolean => {
   if (envKey && process.env[envKey] !== undefined) {
     console.log(`Skipping build-flags override because ${envKey} is set in environment`);
@@ -19,20 +14,18 @@ export const shouldSkip = (envKey: string | undefined): boolean => {
 
 export const parseArgs = (args: string[]) => {
   let command;
+  let skipIfEnv: string | undefined;
   const flagsToDisable = new Set<string>();
   const flagsToEnable = new Set<string>();
 
-  const skipIfEnv = getOptionValue(args, "--skip-if-env");
+  const argsCopy = [...args].slice(2);
+  const skipIfEnvIndex = argsCopy.indexOf("--skip-if-env");
+  if (skipIfEnvIndex !== -1) {
+    skipIfEnv = argsCopy[skipIfEnvIndex + 1];
+    argsCopy.splice(skipIfEnvIndex, 2);
+  }
 
-  const skipIfEnvIndex = args.indexOf("--skip-if-env");
-  const filteredArgs = args
-    .slice(2)
-    .filter((_, i) => {
-      const originalIndex = i + 2;
-      return originalIndex !== skipIfEnvIndex && originalIndex !== skipIfEnvIndex + 1;
-    });
-
-  filteredArgs.forEach((arg) => {
+  argsCopy.forEach((arg) => {
     if (arg.startsWith("-")) {
       flagsToDisable.add(arg.replace("-", ""));
       return;
