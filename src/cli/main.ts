@@ -6,7 +6,7 @@ import { generateOverrides } from "../api/generateOverrides";
 
 export const shouldSkip = (envKey: string | undefined): boolean => {
   if (envKey && process.env[envKey] !== undefined) {
-    console.log(`Skipping build-flags override because ${envKey} is set in environment`);
+    console.log(`Skipping build-flags command because ${envKey} is set in environment (--skip-if-env)`);
     return true;
   }
   return false;
