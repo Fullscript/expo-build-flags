@@ -2,12 +2,12 @@
 
 set -e
 
-function logMark () {
-  echo ""
-  echo "###################################################################"
-  echo "$1"
-  echo "###################################################################"
-  echo ""
+function logMark() {
+	echo ""
+	echo "###################################################################"
+	echo "$1"
+	echo "###################################################################"
+	echo ""
 }
 
 logMark "Setting up test environment"
@@ -23,6 +23,9 @@ node ../test/test-babel-plugin.js
 
 logMark "Running test-config-plugin.js"
 node ../test/test-config-plugin.js
+
+logMark "Running test-config-plugin-android.js"
+node ../test/test-config-plugin-android.js
 
 logMark "Running test-autolinking.js"
 node ../test/test-autolinking.js
