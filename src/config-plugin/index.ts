@@ -1,10 +1,12 @@
 import {
   ConfigPlugin,
   createRunOncePlugin,
+  Mod,
   withAndroidManifest,
   withDangerousMod,
   withInfoPlist,
 } from "@expo/config-plugins";
+import { ExpoConfig } from "@expo/config-types";
 import { generateOverrides, resolveFlagsToInvert } from "../api";
 import pkg from "../../package.json";
 import { withFlaggedAutolinking } from "./withFlaggedAutolinking";
@@ -49,23 +51,55 @@ const withAppleBuildFlags: ConfigPlugin<{ flags: string[] }> = (
   });
 };
 
-const withBundleFlags: ConfigPlugin<{ flags: string[] }> = (config, props) => {
+type BundlePluginProps = { flags: string[] };
+
+const createCrossPlatformMod =
+  ({
+    config,
+    props,
+  }: {
+    config: ExpoConfig;
+    props: BundlePluginProps;
+  }): Mod<unknown> =>
+  async (modConfig) => {
+    const { flags } = props;
+    let flagsToEnable = new Set(flags);
+    const invertable = await resolveFlagsToInvert(config);
+    if (invertable.flagsToEnable.size > 0) {
+      flagsToEnable = mergeSets(flagsToEnable, invertable.flagsToEnable);
+    }
+    await generateOverrides({
+      flagsToEnable,
+      flagsToDisable: invertable.flagsToDisable,
+    });
+    return modConfig;
+  };
+
+const withAndroidBundleBuildFlags: ConfigPlugin<BundlePluginProps> = (
+  config,
+  props
+) => {
   return withDangerousMod(config, [
-    "ios", // not platform-specific, but need to specify
-    async (modConfig) => {
-      const { flags } = props;
-      let flagsToEnable = new Set(flags);
-      const invertable = await resolveFlagsToInvert(config);
-      if (invertable.flagsToEnable.size > 0) {
-        flagsToEnable = mergeSets(flagsToEnable, invertable.flagsToEnable);
-      }
-      await generateOverrides({
-        flagsToEnable,
-        flagsToDisable: invertable.flagsToDisable,
-      });
-      return modConfig;
-    },
+    "android",
+    createCrossPlatformMod({ config, props }),
   ]);
+};
+
+const withAppleBundleBuildFlags: ConfigPlugin<BundlePluginProps> = (
+  config,
+  props
+) => {
+  return withDangerousMod(config, [
+    "ios",
+    createCrossPlatformMod({ config, props }),
+  ]);
+};
+
+const withBundleFlags: ConfigPlugin<{ flags: string[] }> = (config, props) => {
+  return withAppleBundleBuildFlags(
+    withAndroidBundleBuildFlags(config, props),
+    props
+  );
 };
 
 const parseEnvFlags = () => {

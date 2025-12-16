@@ -7,6 +7,7 @@ export const BuildFlags = {
     bundleIdScopedFeature: true,
     newFeature: true,
     publishedFeatured: true,
+    secretAndroidFeature: false,
     secretFeature: true
 };
 `;

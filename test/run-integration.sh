@@ -1,5 +1,10 @@
 #!/bin/bash
 
+#
+# WARNING - these tests build on top of each other
+# adjust your initial test flag state accordingly
+#
+
 set -e
 
 function logMark() {
