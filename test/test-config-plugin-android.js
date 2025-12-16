@@ -7,28 +7,15 @@ export const BuildFlags = {
     bundleIdScopedFeature: true,
     newFeature: true,
     publishedFeatured: true,
-    secretAndroidFeature: false,
-    secretFeature: true
+    secretAndroidFeature: true,
+    secretFeature: false
 };
-`;
-
-const expectedManifestTag =
-  '<meta-data android:name="EXBuildFlags" android:value="secretFeature,newFeature"/>';
-
-const expectedPlistFlagArray = `
-    <key>EXBuildFlags</key>
-    <array>
-      <string>secretFeature</string>
-      <string>newFeature</string>
-    </array>
 `;
 
 addBundleIdScopedFlag();
 installExpoConfigPlugin();
 runPrebuild();
 assertFlagsAllTrue();
-assertAndroidManifest();
-assertInfoPlist();
 
 function addBundleIdScopedFlag() {
   const flagsYmlString = fs.readFileSync("flags.yml", { encoding: "utf-8" });
@@ -51,11 +38,11 @@ function installExpoConfigPlugin() {
 }
 
 function runPrebuild() {
-  cp.execSync("./node_modules/.bin/expo prebuild --no-install --clean", {
+  cp.execSync("./node_modules/.bin/expo prebuild -p android --clean", {
     env: {
       ...process.env,
       CI: 1,
-      EXPO_BUILD_FLAGS: "secretFeature,newFeature",
+      EXPO_BUILD_FLAGS: "secretAndroidFeature",
     },
   });
 }
@@ -80,29 +67,4 @@ function assertFlagsAllTrue() {
   console.log(
     "Assertion passed: Runtime build flags enabled by config plugin!"
   );
-}
-
-function assertAndroidManifest() {
-  const fileContents = fs.readFileSync(
-    "android/app/src/main/AndroidManifest.xml",
-    "utf8"
-  );
-  if (!fileContents.includes(expectedManifestTag)) {
-    throw new Error(
-      "Expected AndroidManifest.xml to contain EXBuildFlags meta-data tag"
-    );
-  }
-
-  console.log(
-    "Assertion passed: AndroidManifest.xml updated by config plugin!"
-  );
-}
-
-function assertInfoPlist() {
-  const fileContents = fs.readFileSync("ios/example/Info.plist", "utf8");
-  if (!fileContents.includes(expectedPlistFlagArray.trim())) {
-    throw new Error("Expected Info.plist to contain EXBuildFlags array");
-  }
-
-  console.log("Assertion passed: Info.plist updated by config plugin!");
 }

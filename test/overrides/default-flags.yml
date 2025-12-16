@@ -1,5 +1,9 @@
 mergePath: "constants/buildFlags.ts"
 flags:
+  secretAndroidFeature:
+    value: false
+    meta:
+      team: "platform"
   secretFeature:
     value: false
     meta:
