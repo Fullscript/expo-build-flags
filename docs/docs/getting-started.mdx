@@ -1,0 +1,63 @@
+---
+sidebar_position: 1
+---
+
+# Getting started
+
+## Install
+
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+
+<Tabs>
+  <TabItem label="yarn" value="yarn">
+
+```sh
+yarn add -D expo-build-flags
+```
+
+  </TabItem>
+  <TabItem label="npm" value="npm">
+
+```sh
+npm install -save-dev expo-build-flags
+```
+
+  </TabItem>
+</Tabs>
+
+## Setup flags files
+
+```sh
+yarn build-flags init
+```
+
+Running this in your repo will:
+
+- write a `flags.yml` file at the root of your repo
+- write a `buildFlags.ts` in your src or app folder
+- update your .gitignore to ignore the runtime file (`buildFlags.ts`)
+
+## Workflow
+
+To generate the gitignored runtime file using the existing flag states in flags.yml, run the override command of the CLI with no arguments:
+
+```sh
+yarn build-flags override
+```
+
+To enable a flag that's defaulted to off (false) in the base flags.yml file, run:
+
+```sh
+yarn build-flags override +flagNameToEnable
+```
+
+Likewise if there's a flag that's defaulted to on (true) in flags.yml and you want it off, run:
+
+```sh
+yarn build-flags override -flagNameToDisable
+```
+
+We recommend running the first command (`yarn build-flags override`) in your package.json `postinstall` script so that default flag states are used by default.
+
+Read more in [Recipes](/docs/recipes) for more ways to use this library.
