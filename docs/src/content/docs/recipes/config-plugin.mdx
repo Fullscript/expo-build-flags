@@ -1,0 +1,71 @@
+---
+title: Config Plugin
+description: Use the Expo config plugin to set flags for EAS native builds.
+---
+
+import { Steps } from "@astrojs/starlight/components";
+
+The config plugin integrates with `expo prebuild` and EAS Build so that flags are set at native build time.
+
+## What it does
+
+When a native build runs, the config plugin will:
+
+1. Read `EXPO_BUILD_FLAGS` from the environment (comma-separated flag names)
+2. Generate the runtime `buildFlags.ts` module with those flags enabled
+3. Add an `EXBuildFlags` array to `Info.plist` (iOS)
+4. Add a `<meta-data android:name="EXBuildFlags">` tag to `AndroidManifest.xml` (Android)
+
+The native metadata is informational -- it lets you inspect which flags a given binary was built with. A convenience API for reading these values from native code is a [planned goal](/roadmap/#native-code-references).
+
+## Setup
+
+<Steps>
+
+1. **Add the plugin to `app.json`**
+
+   ```json title="app.json" {4}
+   {
+     "expo": {
+       "plugins": ["expo-build-flags"]
+     }
+   }
+   ```
+
+2. **Set flags in your EAS build profile**
+
+   ```json title="eas.json" {6}
+   {
+     "build": {
+       "staging": {
+         "env": {
+           "EXPO_BUILD_FLAGS": "newCheckout,betaDashboard"
+         }
+       }
+     }
+   }
+   ```
+
+3. **Build**
+
+   ```bash
+   eas build --profile staging
+   ```
+
+   The generated `buildFlags.ts` will have `newCheckout` and `betaDashboard` set to `true`.
+
+</Steps>
+
+## Skipping the CLI in EAS
+
+If you run `build-flags override` in a `postinstall` script (as recommended in the [Quick Start](/quick-start/#integrate-into-your-dev-workflow)), you'll want to skip it during EAS builds since the config plugin already handles generation. Use `--skip-if-env`:
+
+```json title="package.json"
+{
+  "scripts": {
+    "postinstall": "build-flags override --skip-if-env EAS_BUILD"
+  }
+}
+```
+
+When `EAS_BUILD` is set (which EAS does automatically), the override command is a no-op. You can reference any CI var name here (not value).
