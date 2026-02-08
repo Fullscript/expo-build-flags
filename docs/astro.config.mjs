@@ -5,6 +5,8 @@ import starlightBlog from 'starlight-blog';
 
 // https://astro.build/config
 export default defineConfig({
+	site: 'https://fullscript.github.io',
+	base: '/expo-build-flags',
 	integrations: [
 		starlight({
 			title: 'expo-build-flags',
