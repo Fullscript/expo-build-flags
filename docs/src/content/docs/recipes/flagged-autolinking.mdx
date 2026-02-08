@@ -1,0 +1,82 @@
+---
+title: Flagged Autolinking
+description: Exclude native modules from autolinking when their build flag is off.
+---
+
+import { Steps } from '@astrojs/starlight/components';
+
+If a feature depends on a native module (e.g. `react-native-reanimated`), you may want to avoid linking it in builds where the flag is off. This reduces binary size and avoids shipping unused native code.
+
+:::note
+Flagged autolinking requires React Native >= 75.
+:::
+
+## How it works
+
+During `expo prebuild`, the config plugin reads which modules should be excluded based on flag state and rewrites the autolinking configuration:
+
+- **iOS**: modifies the `Podfile` to exclude modules from CocoaPods
+- **Android**: modifies `settings.gradle` to exclude modules from the Gradle build
+
+## Setup
+
+<Steps>
+
+1. **Declare modules on the flag**
+
+   ```yaml title="flags.yml" {5-7}
+   mergePath: src/constants/buildFlags.ts
+   flags:
+     advancedAnimations:
+       value: false
+       modules:
+         - react-native-reanimated
+         - react-native-gesture-handler
+       meta:
+         team: platform
+   ```
+
+   When `advancedAnimations` is `false`, both modules will be excluded from autolinking.
+
+2. **Enable flagged autolinking in the config plugin**
+
+   ```json title="app.json" {5}
+   {
+     "expo": {
+       "plugins": [
+         ["expo-build-flags", { "flaggedAutolinking": true }]
+       ]
+     }
+   }
+   ```
+
+3. **Run prebuild**
+
+   ```bash
+   npx expo prebuild
+   ```
+
+   The generated Podfile and settings.gradle will exclude the declared modules.
+
+</Steps>
+
+## Allow linking on specific branches
+
+If you have a CI branch that needs a module linked even when the flag is off (e.g. for integration testing), specify a `branch`:
+
+```yaml title="flags.yml" {5-7}
+flags:
+  advancedAnimations:
+    value: false
+    modules:
+      - react-native-reanimated
+      - react-native-gesture-handler:
+          branch: feature/animations-build
+```
+
+On the `feature/animations-build` branch, `react-native-gesture-handler` will still be linked even though the flag is off. The branch is detected from the CI environment (`GITHUB_HEAD_REF` or `CI_COMMIT_REF_NAME`).
+
+## Limitations
+
+- Locally-referenced modules (paths like `./my-module`) are not currently supported for exclusion due to upstream constraints in `expo-modules-autolinking`.
+- Only absolute package names are supported.

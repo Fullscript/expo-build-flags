@@ -1,0 +1,37 @@
+---
+title: expo-build-flags
+description: Feature flags for Expo projects that work across JS bundles and native builds.
+template: splash
+hero:
+  title: expo-build-flags
+  tagline: Feature flags for Expo projects that work across JS bundles and native builds.
+  actions:
+    - text: Get Started
+      link: /quick-start/
+      icon: right-arrow
+      variant: primary
+    - text: View on GitHub
+      link: https://github.com/fullscript/expo-build-flags
+      icon: external
+      variant: minimal
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+<CardGrid>
+  <Card title="Local overrides" icon="pencil">
+    Override flag values during development without touching committed source.
+  </Card>
+  <Card title="EAS + Config Plugin" icon="setting">
+    Set flags for native builds via `EXPO_BUILD_FLAGS` and the Expo config plugin.
+  </Card>
+  <Card title="Tree shaking" icon="seti:javascript">
+    Babel plugin replaces flag imports with literals so bundlers can eliminate dead code paths.
+  </Card>
+  <Card title="Flagged autolinking" icon="puzzle">
+    Exclude React Native modules from autolinking when their flag is off.
+  </Card>
+  <Card title="Type-safe" icon="approve-check">
+    Generated TypeScript module gives you autocomplete and compile-time checks on every flag.
+  </Card>
+</CardGrid>

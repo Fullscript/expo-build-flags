@@ -1,0 +1,70 @@
+---
+title: Babel Plugin
+description: Enable tree shaking to strip disabled feature code from production bundles.
+---
+
+import { Steps } from '@astrojs/starlight/components';
+
+The Babel plugin replaces every `BuildFlags.flagName` access with a literal `true` or `false`. This lets Metro (or any bundler) eliminate dead code paths in production.
+
+## How it works
+
+Given this source:
+
+```tsx
+import { BuildFlags } from './src/constants/buildFlags';
+
+if (BuildFlags.newCheckout) {
+  enableNewCheckout();
+}
+```
+
+With `newCheckout: false` in the generated module, the plugin transforms it to:
+
+```tsx
+if (false) {
+  enableNewCheckout();
+}
+```
+
+The bundler's minifier then strips the entire block as dead code. When the flag is `true`, the code is kept.
+
+## Setup
+
+<Steps>
+
+1. **Add the plugin to your Babel config**
+
+   ```js title="babel.config.js" {5-7}
+   module.exports = function (api) {
+     api.cache(true);
+     return {
+       presets: ['babel-preset-expo'],
+       plugins: [
+         ['expo-build-flags/babel-plugin', { flagsModule: './src/constants/buildFlags.ts' }],
+       ],
+     };
+   };
+   ```
+
+   The `flagsModule` path must match the `mergePath` in your `flags.yml`.
+
+2. **Use flags in your code as normal**
+
+   ```tsx
+   import { BuildFlags } from './src/constants/buildFlags';
+
+   if (BuildFlags.secretFeature) {
+     return <SecretFeatureUI />;
+   }
+   ```
+
+   At bundle time the import is removed and the condition is replaced with the literal value.
+
+</Steps>
+
+## Notes
+
+- The plugin is **automatically disabled** in the `test` environment so your Jest tests can change flag values freely.
+- The plugin only transforms accesses on the `BuildFlags` named export. Default exports or renamed imports are not handled.
+- Make sure `flagsModule` is a path relative to the project root, matching `mergePath` exactly.
