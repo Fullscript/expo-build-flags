@@ -7,16 +7,42 @@ import {
   withInfoPlist,
 } from "@expo/config-plugins";
 import { ExpoConfig } from "@expo/config-types";
-import { generateOverrides, resolveFlagsToInvert } from "../api";
+import {
+  generateOverrides,
+  resolveEnabledFlagNames,
+  resolveFlagsToInvert,
+} from "../api";
 import pkg from "../../package.json";
 import { withFlaggedAutolinking } from "./withFlaggedAutolinking";
 import { mergeSets } from "../api/mergeSets";
 
-const withAndroidBuildFlags: ConfigPlugin<{ flags: string[] }> = (
+type NativeFlagPluginProps = { envFlags: string[]; expoConfig: ExpoConfig };
+
+let cachedResolvedFlags: string[] | null = null;
+const resolveAllEnabledFlags = async (
+  envFlags: string[],
+  expoConfig: ExpoConfig
+): Promise<string[]> => {
+  if (cachedResolvedFlags) {
+    return cachedResolvedFlags;
+  }
+  let flagsToEnable = new Set(envFlags);
+  const invertable = await resolveFlagsToInvert(expoConfig);
+  if (invertable.flagsToEnable.size > 0) {
+    flagsToEnable = mergeSets(flagsToEnable, invertable.flagsToEnable);
+  }
+  cachedResolvedFlags = await resolveEnabledFlagNames({
+    flagsToEnable,
+    flagsToDisable: invertable.flagsToDisable,
+  });
+  return cachedResolvedFlags;
+};
+
+const withAndroidBuildFlags: ConfigPlugin<NativeFlagPluginProps> = (
   config,
   props
 ) => {
-  return withAndroidManifest(config, (config) => {
+  return withAndroidManifest(config, async (config) => {
     if (!config.modResults) {
       throw new Error("AndroidManifest.xml not found in the project");
     }
@@ -26,13 +52,18 @@ const withAndroidBuildFlags: ConfigPlugin<{ flags: string[] }> = (
       throw new Error("Application node not found in AndroidManifest.xml");
     }
 
+    const resolvedFlags = await resolveAllEnabledFlags(
+      props.envFlags,
+      props.expoConfig
+    );
+
     const meta = mainApplication["meta-data"];
     mainApplication["meta-data"] = [
       ...(meta ?? []),
       {
         $: {
           "android:name": "EXBuildFlags",
-          "android:value": props.flags.join(","),
+          "android:value": resolvedFlags.join(","),
         },
       },
     ];
@@ -41,12 +72,16 @@ const withAndroidBuildFlags: ConfigPlugin<{ flags: string[] }> = (
   });
 };
 
-const withAppleBuildFlags: ConfigPlugin<{ flags: string[] }> = (
+const withAppleBuildFlags: ConfigPlugin<NativeFlagPluginProps> = (
   config,
   props
 ) => {
-  return withInfoPlist(config, (config) => {
-    config.modResults.EXBuildFlags = props.flags;
+  return withInfoPlist(config, async (config) => {
+    const resolvedFlags = await resolveAllEnabledFlags(
+      props.envFlags,
+      props.expoConfig
+    );
+    config.modResults.EXBuildFlags = resolvedFlags;
     return config;
   });
 };
@@ -124,15 +159,11 @@ type ConfigPluginProps =
 type WithBuildFlagsProps = { skipBundleOverride?: boolean; flags: string[] };
 
 const withBuildFlags: ConfigPlugin<WithBuildFlagsProps> = (config, props) => {
-  const flags = props.flags;
-  if (!flags.length) {
-    return props?.skipBundleOverride
-      ? config
-      : withBundleFlags(config, { flags });
-  }
+  const { flags } = props;
+  const nativeProps = { envFlags: flags, expoConfig: config };
 
-  const nativeConfig = withAndroidBuildFlags(config, { flags });
-  const mergedNativeConfig = withAppleBuildFlags(nativeConfig, { flags });
+  const nativeConfig = withAndroidBuildFlags(config, nativeProps);
+  const mergedNativeConfig = withAppleBuildFlags(nativeConfig, nativeProps);
   if (props?.skipBundleOverride) {
     return mergedNativeConfig;
   }

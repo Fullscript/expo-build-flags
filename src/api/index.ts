@@ -1,5 +1,13 @@
-import { generateOverrides } from "./generateOverrides";
+import {
+  generateOverrides,
+  resolveEnabledFlagNames,
+} from "./generateOverrides";
 import { resolveFlagsToInvert } from "./resolveFlagsToInvert";
 import { readConfig } from "./readConfig";
 
-export { generateOverrides, resolveFlagsToInvert, readConfig };
+export {
+  generateOverrides,
+  resolveEnabledFlagNames,
+  resolveFlagsToInvert,
+  readConfig,
+};

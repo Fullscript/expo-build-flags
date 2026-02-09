@@ -13,13 +13,15 @@ export const BuildFlags = {
 `;
 
 const expectedManifestTag =
-  '<meta-data android:name="EXBuildFlags" android:value="secretFeature,newFeature"/>';
+  '<meta-data android:name="EXBuildFlags" android:value="secretFeature,publishedFeatured,newFeature,bundleIdScopedFeature"/>';
 
 const expectedPlistFlagArray = `
     <key>EXBuildFlags</key>
     <array>
       <string>secretFeature</string>
+      <string>publishedFeatured</string>
       <string>newFeature</string>
+      <string>bundleIdScopedFeature</string>
     </array>
 `;
 
