@@ -3,7 +3,7 @@ title: Flagged Autolinking
 description: Exclude native modules from autolinking when their build flag is off.
 ---
 
-import { Steps } from '@astrojs/starlight/components';
+import { Steps } from "@astrojs/starlight/components";
 
 If a feature depends on a native module (e.g. `react-native-reanimated`), you may want to avoid linking it in builds where the flag is off. This reduces binary size and avoids shipping unused native code.
 
@@ -43,9 +43,7 @@ During `expo prebuild`, the config plugin reads which modules should be excluded
    ```json title="app.json" {5}
    {
      "expo": {
-       "plugins": [
-         ["expo-build-flags", { "flaggedAutolinking": true }]
-       ]
+       "plugins": [["expo-build-flags", { "flaggedAutolinking": true }]]
      }
    }
    ```

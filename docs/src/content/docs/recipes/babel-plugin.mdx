@@ -3,7 +3,7 @@ title: Babel Plugin
 description: Enable tree shaking to strip disabled feature code from production bundles.
 ---
 
-import { Steps } from '@astrojs/starlight/components';
+import { Steps } from "@astrojs/starlight/components";
 
 The Babel plugin replaces every `BuildFlags.flagName` access with a literal `true` or `false`. This lets Metro (or any bundler) eliminate dead code paths in production.
 
@@ -12,7 +12,7 @@ The Babel plugin replaces every `BuildFlags.flagName` access with a literal `tru
 Given this source:
 
 ```tsx
-import { BuildFlags } from './src/constants/buildFlags';
+import { BuildFlags } from "./src/constants/buildFlags";
 
 if (BuildFlags.newCheckout) {
   enableNewCheckout();
@@ -39,9 +39,12 @@ The bundler's minifier then strips the entire block as dead code. When the flag 
    module.exports = function (api) {
      api.cache(true);
      return {
-       presets: ['babel-preset-expo'],
+       presets: ["babel-preset-expo"],
        plugins: [
-         ['expo-build-flags/babel-plugin', { flagsModule: './src/constants/buildFlags.ts' }],
+         [
+           "expo-build-flags/babel-plugin",
+           { flagsModule: "./src/constants/buildFlags.ts" },
+         ],
        ],
      };
    };
@@ -52,7 +55,7 @@ The bundler's minifier then strips the entire block as dead code. When the flag 
 2. **Use flags in your code as normal**
 
    ```tsx
-   import { BuildFlags } from './src/constants/buildFlags';
+   import { BuildFlags } from "./src/constants/buildFlags";
 
    if (BuildFlags.secretFeature) {
      return <SecretFeatureUI />;

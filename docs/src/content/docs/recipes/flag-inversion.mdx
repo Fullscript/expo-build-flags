@@ -23,10 +23,10 @@ flags:
 
 With this configuration:
 
-| Build variant | Bundle ID | `internalTools` value |
-|---|---|---|
-| Public | `com.mycompany.app` | `false` (default) |
-| Internal | `com.mycompany.app.internal` | `true` (inverted) |
+| Build variant | Bundle ID                    | `internalTools` value |
+| ------------- | ---------------------------- | --------------------- |
+| Public        | `com.mycompany.app`          | `false` (default)     |
+| Internal      | `com.mycompany.app.internal` | `true` (inverted)     |
 
 The inversion happens at prebuild time when the Expo config plugin runs. It reads the bundle identifier from your Expo config and checks it against the `bundleId` list.
 

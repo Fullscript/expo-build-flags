@@ -3,24 +3,12 @@ title: Quick Start
 description: Install expo-build-flags, define a flag, and use it in your app.
 ---
 
-import { Tabs, TabItem, Steps, FileTree } from '@astrojs/starlight/components';
+import { Tabs, TabItem, Steps, FileTree } from "@astrojs/starlight/components";
 
 <Tabs syncKey="pkg">
-  <TabItem label="npm">
-    ```bash
-    npm install expo-build-flags
-    ```
-  </TabItem>
-  <TabItem label="yarn">
-    ```bash
-    yarn add expo-build-flags
-    ```
-  </TabItem>
-  <TabItem label="pnpm">
-    ```bash
-    pnpm add expo-build-flags
-    ```
-  </TabItem>
+  <TabItem label="npm">```bash npm install expo-build-flags ```</TabItem>
+  <TabItem label="yarn">```bash yarn add expo-build-flags ```</TabItem>
+  <TabItem label="pnpm">```bash pnpm add expo-build-flags ```</TabItem>
 </Tabs>
 
 `typescript` is a peer dependency and should already be in your Expo project.
@@ -30,21 +18,9 @@ import { Tabs, TabItem, Steps, FileTree } from '@astrojs/starlight/components';
 1. **Initialize**
 
    <Tabs syncKey="pkg">
-     <TabItem label="npm">
-       ```bash
-       npx build-flags init
-       ```
-     </TabItem>
-     <TabItem label="yarn">
-       ```bash
-       yarn build-flags init
-       ```
-     </TabItem>
-     <TabItem label="pnpm">
-       ```bash
-       pnpm build-flags init
-       ```
-     </TabItem>
+     <TabItem label="npm">```bash npx build-flags init ```</TabItem>
+     <TabItem label="yarn">```bash yarn build-flags init ```</TabItem>
+     <TabItem label="pnpm">```bash pnpm build-flags init ```</TabItem>
    </Tabs>
 
    This scaffolds a `flags.yml` at the project root, detects your source directory (`src/` or `app/`), generates the initial `buildFlags.ts` module, and adds the generated file to `.gitignore`.
@@ -67,21 +43,9 @@ import { Tabs, TabItem, Steps, FileTree } from '@astrojs/starlight/components';
 3. **Generate the runtime module**
 
    <Tabs syncKey="pkg">
-     <TabItem label="npm">
-       ```bash
-       npx build-flags override
-       ```
-     </TabItem>
-     <TabItem label="yarn">
-       ```bash
-       yarn build-flags override
-       ```
-     </TabItem>
-     <TabItem label="pnpm">
-       ```bash
-       pnpm build-flags override
-       ```
-     </TabItem>
+     <TabItem label="npm">```bash npx build-flags override ```</TabItem>
+     <TabItem label="yarn">```bash yarn build-flags override ```</TabItem>
+     <TabItem label="pnpm">```bash pnpm build-flags override ```</TabItem>
    </Tabs>
 
    This reads `flags.yml` and writes the module at your `mergePath`:
@@ -96,7 +60,7 @@ import { Tabs, TabItem, Steps, FileTree } from '@astrojs/starlight/components';
 4. **Use the flag in code**
 
    ```tsx title="src/screens/checkout.tsx"
-   import { BuildFlags } from '../constants/buildFlags';
+   import { BuildFlags } from "../constants/buildFlags";
 
    export function CheckoutScreen() {
      if (BuildFlags.newCheckout) {
@@ -112,19 +76,13 @@ import { Tabs, TabItem, Steps, FileTree } from '@astrojs/starlight/components';
 
    <Tabs syncKey="pkg">
      <TabItem label="npm">
-       ```bash
-       npx build-flags override +newCheckout
-       ```
+       ```bash npx build-flags override +newCheckout ```
      </TabItem>
      <TabItem label="yarn">
-       ```bash
-       yarn build-flags override +newCheckout
-       ```
+       ```bash yarn build-flags override +newCheckout ```
      </TabItem>
      <TabItem label="pnpm">
-       ```bash
-       pnpm build-flags override +newCheckout
-       ```
+       ```bash pnpm build-flags override +newCheckout ```
      </TabItem>
    </Tabs>
 
@@ -135,13 +93,8 @@ import { Tabs, TabItem, Steps, FileTree } from '@astrojs/starlight/components';
 Your project structure should now look like this:
 
 <FileTree>
-- flags.yml
-- src/
-  - constants/
-    - **buildFlags.ts** (generated, gitignored)
-  - screens/
-    - checkout.tsx
-- ...
+  - flags.yml - src/ - constants/ - **buildFlags.ts** (generated, gitignored) -
+  screens/ - checkout.tsx - ...
 </FileTree>
 
 ## Integrate into your dev workflow

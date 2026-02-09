@@ -50,7 +50,7 @@ export const BuildFlags = {
 This file is gitignored. Your app imports it like any other module:
 
 ```tsx
-import { BuildFlags } from './src/constants/buildFlags';
+import { BuildFlags } from "./src/constants/buildFlags";
 
 if (BuildFlags.newCheckout) {
   return <NewCheckoutFlow />;
