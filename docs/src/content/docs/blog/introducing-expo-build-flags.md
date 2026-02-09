@@ -3,81 +3,39 @@ title: "Introducing expo-build-flags"
 date: 2025-02-07
 authors:
   - name: Wes Johnson
-    url: https://github.com/wes337
+    url: https://github.com/sterlingwes
 ---
 
-Feature flags are a solved problem for web apps. Services like LaunchDarkly and Statsig give you a dashboard, user targeting, and gradual rollouts. But if you're building a React Native app with Expo, the story is different.
+Remote feature flags work on mobile. We use them. Plenty of services can give you a dashboard, user targeting, and gradual rollouts, and they work fine in React Native apps. So why build another feature flag tool?
 
-Mobile releases ship as binaries. You can't just flip a server-side flag and have every user see the change. Your JavaScript bundle is frozen at build time. Native modules are linked at compile time. And when you're working across iOS, Android, and EAS Build, the question "is this feature on?" has to be answered in several places at once.
+Because not every flag needs remote control, and the early life of a feature looks different from the late stages.
 
-**expo-build-flags** is a small toolkit that makes build-time feature flags practical for Expo projects.
+## Two stages of feature development
 
-## The problem
+At our company, feature development tends to follow a pattern:
 
-Here's a common scenario: your team is developing a new checkout flow. The code lives on `main` behind a conditional, and you need:
+**Stage 1: Building.** A team starts work on a new feature. The code lands on `main` behind a conditional, but it's not ready for anyone outside the team to see. You don't need a percentage rollout or a kill switch -- you just need the feature _off_ for everyone except the people building it. You want control over which local environments, staging builds, and CI pipelines have it enabled. And you want that control without committing toggles or env files that affect everyone else.
 
-- The flag **off by default** so it doesn't ship to production.
-- The flag **on during local development** so you can work on it, without changing committed code.
-- The flag **on for staging builds** in EAS so QA can test it.
-- The native module the feature depends on **excluded from autolinking** in production builds where the flag is off, so the binary stays small.
-- The **dead code eliminated** from production bundles when the flag is off.
+**Stage 2: Releasing.** The feature is stable and headed to production. Now you decide: does this need remote control? If it's a risky change, you might want a gradual rollout or the ability to roll back without a new binary. If it's an experiment, you want targeting and metrics. That's where a remote flag service earns its keep.
 
-Most teams cobble this together with environment variables, custom scripts, and manual coordination. It works, but it's fragile and hard to reason about.
+Build flags handle stage 1. Remote flags handle stage 2. Sometimes a feature skips stage 2 entirely -- it's just done, and you remove the flag. The two approaches complement each other.
 
-## How it works
+## Why build-time?
 
-You define your flags in a single `flags.yml` at the project root:
+Some things are simpler to reason about when they're resolved before the app runs:
 
-```yaml
-mergePath: src/constants/buildFlags.ts
-flags:
-  newCheckout:
-    value: false
-    modules:
-      - react-native-reanimated
-    meta:
-      team: growth
-```
+- **No network dependency.** The flag value is baked into the bundle. It doesn't depend on a service being reachable or an SDK initializing before your first render.
+- **Dead code elimination.** When a flag is `false` at build time, the Babel plugin replaces it with a literal and the bundler strips the unreachable code path entirely. Your production bundle doesn't ship code for features that aren't enabled.
+- **Native module control.** React Native autolinking happens at build time. If a feature depends on a native module, you can exclude that module from CocoaPods and Gradle when its flag is off. The binary stays smaller.
+- **Developer ergonomics.** Each developer can enable the flags they're working on locally without touching committed files. New developers get a valid flag module automatically via `postinstall`.
 
-Running `build-flags override` generates a TypeScript module at the `mergePath`:
-
-```ts
-export const BuildFlags = {
-  newCheckout: false,
-};
-```
-
-This file is gitignored. Your app imports it like any other module:
-
-```tsx
-import { BuildFlags } from "./src/constants/buildFlags";
-
-if (BuildFlags.newCheckout) {
-  return <NewCheckoutFlow />;
-}
-```
-
-That's the basic loop. From there, each piece of the toolkit layers on:
-
-**Local overrides**: `build-flags override +newCheckout` regenerates the module with the flag enabled. No committed files change.
-
-**EAS builds**: add `"plugins": ["expo-build-flags"]` to your app.json and set `EXPO_BUILD_FLAGS=newCheckout` in your EAS build profile. The config plugin generates the module and writes metadata to `Info.plist` and `AndroidManifest.xml`.
-
-**Tree shaking**: add the Babel plugin and `BuildFlags.newCheckout` is replaced with `false` at bundle time. The minifier strips the dead code path.
-
-**Flagged autolinking**: with `flaggedAutolinking: true`, native modules declared on a disabled flag are excluded from CocoaPods and Gradle during prebuild.
-
-## What it's not
-
-This is not a runtime feature flag service. There's no dashboard, no user targeting, no percentage rollouts. It's a build-time tool: flags are booleans that are resolved before the app runs.
-
-If you need runtime flags, use a service like LaunchDarkly or Statsig alongside this. expo-build-flags handles the build pipeline; runtime services handle the user-facing decisions.
+None of this replaces what a remote flag service does. It's just another tool -- one that's useful earlier in the lifecycle of a feature.
 
 ## Getting started
 
 ```bash
-npm install expo-build-flags
-build-flags init
+yarn install expo-build-flags
+yarn build-flags init
 ```
 
-Check out the [Quick Start](/quick-start/) for a walkthrough, or browse the [Recipes](/recipes/config-plugin/) to set up the specific pieces you need.
+Check out the [Quick Start](/expo-build-flags/quick-start/) for a walkthrough, or browse the [Recipes](/expo-build-flags/recipes/config-plugin/) to set up the specific pieces you need.
