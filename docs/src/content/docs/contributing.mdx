@@ -1,0 +1,76 @@
+---
+title: Contributing
+description: How to contribute to expo-build-flags -- running tests and goals.
+---
+
+## Building
+
+The project compiles TypeScript to JavaScript with `tsc`:
+
+```bash
+npm run build
+```
+
+Output goes to the `build/` directory.
+
+## Tests
+
+There are two test layers: unit tests (Jest) and integration tests (shell scripts + Node scripts).
+
+### Unit tests
+
+```bash
+npm run test:unit
+```
+
+Unit tests live next to the source files as `*.spec.ts` files. They cover:
+
+- **`readConfig.spec.ts`** -- module exclusion logic based on flag state and branch matching
+- **`generateOverrides.spec.ts`** -- flag enabling/disabling with branch pattern matching (exact, wildcard suffix, prefix, includes)
+- **`resolveFlagsToInvert.spec.ts`** -- bundle ID matching for flag inversion
+- **`main.spec.ts`** -- CLI argument parsing
+- **`withFlaggedAutolinking.spec.ts`** -- Podfile and `settings.gradle` transformations (uses Jest snapshots)
+
+Unit tests mock `fs/promises` and `readConfig` so they run without touching the filesystem.
+
+### Integration tests
+
+```bash
+npm test
+```
+
+This runs unit tests first, then the integration suite. The integration tests use the `example/` Expo app and exercise end-to-end workflows:
+
+1. **test-overrides.sh** -- runs `build-flags override` with various flag combinations and checks the generated output
+2. **test-babel-plugin.js** -- enables a flag, bundles with the Babel plugin, and asserts that flagged code is included or stripped
+3. **test-config-plugin.js** -- runs `expo prebuild` with `EXPO_BUILD_FLAGS` and checks `Info.plist` and the generated module
+4. **test-config-plugin-android.js** -- same as above but verifies `AndroidManifest.xml`
+5. **test-autolinking.js** -- runs prebuild with `flaggedAutolinking: true` and checks that Podfile.lock and Gradle exclude the right modules
+
+:::caution
+Integration tests build on top of each other sequentially. They share state through the `example/` app directory, so they must run in order.
+:::
+
+To run integration tests against Expo SDK 52:
+
+```bash
+npm run test:next
+```
+
+## Goals for the library
+
+The library aims to be a minimal, focused toolkit for build-time feature flags in Expo projects. It is **not** a runtime feature flag service. The core design principles:
+
+1. **Flags are booleans resolved at build time.** Runtime evaluation, remote config, and user targeting are out of scope.
+2. **The generated module is the source of truth for JS.** All JS code reads from one `BuildFlags` import.
+3. **Native metadata is informational.** The config plugin writes flag names to `Info.plist` and `AndroidManifest.xml` so you can inspect a binary, but native API convenience wrappers are a future goal.
+4. **The toolkit is composable.** The CLI, Babel plugin, config plugin, and autolinking integration are all optional. Use only what you need.
+5. **No runtime dependencies.** The generated module is plain TypeScript with no imports. `yaml` and `@babel/helper-plugin-utils` are the only production dependencies of the library itself.
+
+## Making changes
+
+1. Fork the repository and create a branch.
+2. Make your changes in `src/`.
+3. Run `npm run build` to compile.
+4. Run `npm test` to ensure all tests pass.
+5. Open a pull request.

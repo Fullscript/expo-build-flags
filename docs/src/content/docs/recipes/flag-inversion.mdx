@@ -1,0 +1,42 @@
+---
+title: Flag Inversion
+description: Invert a flag's default value for specific bundle identifiers.
+---
+
+Flag inversion lets you flip a flag's default value for specific native builds based on their bundle ID. This is useful when you have multiple app variants (e.g. internal vs. public) and want different default flag states per variant.
+
+## How it works
+
+The `invertFor.bundleId` matcher compares against the `ios.bundleIdentifier` and `android.package` values in your Expo config. If there's a match, the flag value is inverted during `expo prebuild`.
+
+## Example
+
+```yaml title="flags.yml" {5-8}
+mergePath: src/constants/buildFlags.ts
+flags:
+  internalTools:
+    value: false
+    invertFor:
+      bundleId:
+        - com.mycompany.app.internal
+```
+
+With this configuration:
+
+| Build variant | Bundle ID                    | `internalTools` value |
+| ------------- | ---------------------------- | --------------------- |
+| Public        | `com.mycompany.app`          | `false` (default)     |
+| Internal      | `com.mycompany.app.internal` | `true` (inverted)     |
+
+The inversion happens at prebuild time when the Expo config plugin runs. It reads the bundle identifier from your Expo config and checks it against the `bundleId` list.
+
+## When to use this
+
+- You maintain multiple app variants with different bundle identifiers
+- Certain features should be on by default for internal builds but off for public builds (or vice versa)
+- You want this to be declarative in `flags.yml` rather than managed through environment variables
+
+## Notes
+
+- Inversion only applies during native builds via `expo prebuild`. It does not affect `build-flags override` during local development. Use the CLI `+`/`-` syntax to toggle flags locally.
+- Both iOS `bundleIdentifier` and Android `package` are checked.
