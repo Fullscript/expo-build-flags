@@ -1,4 +1,4 @@
-type InvertMatchers = { bundleId?: string[] };
+type InvertMatchers = { bundleId?: string[]; platform?: ("ios" | "android")[] };
 type OTAFilter = { branches: string[] };
 type ModuleConfig = string | { branch: string };
 export type FlagConfig = {

@@ -2,7 +2,10 @@ import YAML from "yaml";
 import { existsSync } from "fs";
 import { readFile, writeFile } from "fs/promises";
 import { BuildFlags } from "../api/BuildFlags";
-import { generateOverrides } from "../api/generateOverrides";
+import {
+  generateOverrides,
+  generateSourceOfTruth,
+} from "../api/generateOverrides";
 
 export const shouldSkip = (envKey: string | undefined): boolean => {
   if (envKey && process.env[envKey] !== undefined) {
@@ -106,16 +109,28 @@ const run = async () => {
   }
 
   if (command === "override") {
-    await generateOverrides({ flagsToEnable, flagsToDisable });
+    const hasExplicitOverrides =
+      flagsToEnable.size > 0 || flagsToDisable.size > 0;
+    if (hasExplicitOverrides) {
+      await generateOverrides({ flagsToEnable, flagsToDisable });
+    } else {
+      await generateSourceOfTruth();
+    }
     return;
   }
 
   if (command === "ota-override") {
-    await generateOverrides({
-      flagsToEnable,
-      flagsToDisable,
-      enableBranchFlags: true,
-    });
+    const hasExplicitOverrides =
+      flagsToEnable.size > 0 || flagsToDisable.size > 0;
+    if (hasExplicitOverrides) {
+      await generateOverrides({
+        flagsToEnable,
+        flagsToDisable,
+        enableBranchFlags: true,
+      });
+    } else {
+      await generateSourceOfTruth({ enableBranchFlags: true });
+    }
     return;
   }
 

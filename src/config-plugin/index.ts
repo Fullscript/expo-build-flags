@@ -8,7 +8,7 @@ import {
 } from "@expo/config-plugins";
 import { ExpoConfig } from "@expo/config-types";
 import {
-  generateOverrides,
+  generateSourceOfTruth,
   resolveEnabledFlagNames,
   resolveFlagsToInvert,
 } from "../api";
@@ -18,24 +18,25 @@ import { mergeSets } from "../api/mergeSets";
 
 type NativeFlagPluginProps = { envFlags: string[]; expoConfig: ExpoConfig };
 
-let cachedResolvedFlags: string[] | null = null;
+const cachedResolvedFlags: Record<string, string[]> = {};
 const resolveAllEnabledFlags = async (
   envFlags: string[],
-  expoConfig: ExpoConfig
+  expoConfig: ExpoConfig,
+  platform: "ios" | "android"
 ): Promise<string[]> => {
-  if (cachedResolvedFlags) {
-    return cachedResolvedFlags;
+  if (cachedResolvedFlags[platform]) {
+    return cachedResolvedFlags[platform];
   }
   let flagsToEnable = new Set(envFlags);
-  const invertable = await resolveFlagsToInvert(expoConfig);
+  const invertable = await resolveFlagsToInvert(expoConfig, platform);
   if (invertable.flagsToEnable.size > 0) {
     flagsToEnable = mergeSets(flagsToEnable, invertable.flagsToEnable);
   }
-  cachedResolvedFlags = await resolveEnabledFlagNames({
+  cachedResolvedFlags[platform] = await resolveEnabledFlagNames({
     flagsToEnable,
     flagsToDisable: invertable.flagsToDisable,
   });
-  return cachedResolvedFlags;
+  return cachedResolvedFlags[platform];
 };
 
 const withAndroidBuildFlags: ConfigPlugin<NativeFlagPluginProps> = (
@@ -54,7 +55,8 @@ const withAndroidBuildFlags: ConfigPlugin<NativeFlagPluginProps> = (
 
     const resolvedFlags = await resolveAllEnabledFlags(
       props.envFlags,
-      props.expoConfig
+      props.expoConfig,
+      "android"
     );
 
     const meta = mainApplication["meta-data"];
@@ -79,61 +81,49 @@ const withAppleBuildFlags: ConfigPlugin<NativeFlagPluginProps> = (
   return withInfoPlist(config, async (config) => {
     const resolvedFlags = await resolveAllEnabledFlags(
       props.envFlags,
-      props.expoConfig
+      props.expoConfig,
+      "ios"
     );
     config.modResults.EXBuildFlags = resolvedFlags;
     return config;
   });
 };
 
-type BundlePluginProps = { flags: string[] };
+type BundlePluginProps = { flags: string[]; expoConfig: ExpoConfig };
 
-const createCrossPlatformMod =
+let bundleFlagsGenerated = false;
+
+const createBundleFlagsMod =
   ({
-    config,
     props,
   }: {
-    config: ExpoConfig;
     props: BundlePluginProps;
   }): Mod<unknown> =>
   async (modConfig) => {
-    const { flags } = props;
-    let flagsToEnable = new Set(flags);
-    const invertable = await resolveFlagsToInvert(config);
-    if (invertable.flagsToEnable.size > 0) {
-      flagsToEnable = mergeSets(flagsToEnable, invertable.flagsToEnable);
+    if (bundleFlagsGenerated) {
+      return modConfig;
     }
-    await generateOverrides({
-      flagsToEnable,
-      flagsToDisable: invertable.flagsToDisable,
+    bundleFlagsGenerated = true;
+
+    const envFlagsToEnable = new Set(props.flags);
+
+    await generateSourceOfTruth({
+      expoConfig: props.expoConfig,
+      envFlagsToEnable: envFlagsToEnable.size > 0 ? envFlagsToEnable : undefined,
     });
     return modConfig;
   };
 
-const withAndroidBundleBuildFlags: ConfigPlugin<BundlePluginProps> = (
-  config,
-  props
-) => {
-  return withDangerousMod(config, [
-    "android",
-    createCrossPlatformMod({ config, props }),
-  ]);
-};
-
-const withAppleBundleBuildFlags: ConfigPlugin<BundlePluginProps> = (
-  config,
-  props
-) => {
-  return withDangerousMod(config, [
-    "ios",
-    createCrossPlatformMod({ config, props }),
-  ]);
-};
-
-const withBundleFlags: ConfigPlugin<{ flags: string[] }> = (config, props) => {
-  return withAppleBundleBuildFlags(
-    withAndroidBundleBuildFlags(config, props),
-    props
+const withBundleFlags: ConfigPlugin<BundlePluginProps> = (config, props) => {
+  return withDangerousMod(
+    withDangerousMod(config, [
+      "android",
+      createBundleFlagsMod({ props }),
+    ]),
+    [
+      "ios",
+      createBundleFlagsMod({ props }),
+    ]
   );
 };
 
@@ -168,7 +158,7 @@ const withBuildFlags: ConfigPlugin<WithBuildFlagsProps> = (config, props) => {
     return mergedNativeConfig;
   }
 
-  return withBundleFlags(mergedNativeConfig, { flags });
+  return withBundleFlags(mergedNativeConfig, { flags, expoConfig: config });
 };
 
 const withBuildFlagsAndLinking: ConfigPlugin<ConfigPluginProps> = (
@@ -182,7 +172,7 @@ const withBuildFlagsAndLinking: ConfigPlugin<ConfigPluginProps> = (
     mergedConfig = withFlaggedAutolinking(mergedConfig, { flags });
   }
 
-  return withBuildFlags(config, { ...props, flags });
+  return withBuildFlags(mergedConfig, { ...props, flags });
 };
 
 export default createRunOncePlugin(

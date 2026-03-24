@@ -1,33 +1,12 @@
 import type { ExpoConfig } from "@expo/config-types";
 
-import { BuildFlags } from "./BuildFlags";
 import { readConfig } from "./readConfig";
 import { InvertableFlagTuple } from "./types";
 
-export const generateOverrides = async ({
-  flagsToEnable,
-  flagsToDisable,
-  enableBranchFlags,
-}: {
-  flagsToEnable?: Set<string>;
-  flagsToDisable?: Set<string>;
-  enableBranchFlags?: boolean;
-}) => {
-  const { mergePath, flags: defaultFlags } = await readConfig();
-  const flags = new BuildFlags(defaultFlags);
-  if (enableBranchFlags) {
-    flags.enableBranchFlags();
-  }
-  if (flagsToEnable) {
-    flags.enable(flagsToEnable);
-  }
-  if (flagsToDisable) {
-    flags.disable(flagsToDisable);
-  }
-  await flags.save(mergePath);
-};
-
-export const resolveFlagsToInvert = async (expoConfig: ExpoConfig) => {
+export const resolveFlagsToInvert = async (
+  expoConfig?: ExpoConfig,
+  platform?: "ios" | "android"
+) => {
   const { flags } = await readConfig();
   const invertable = Object.entries(flags).filter(
     (tuple): tuple is InvertableFlagTuple => !!tuple[1].invertFor
@@ -42,18 +21,29 @@ export const resolveFlagsToInvert = async (expoConfig: ExpoConfig) => {
 
   invertable.forEach(([flagName, flagConfig]) => {
     const invertFor = flagConfig.invertFor;
+    let shouldInvert = false;
 
-    if (invertFor.bundleId) {
+    if (invertFor.bundleId && expoConfig) {
       const bundleIds = [
         expoConfig.ios?.bundleIdentifier,
         expoConfig.android?.package,
       ].filter(Boolean);
       if (
-        !bundleIds.length ||
-        !invertFor.bundleId.find((bundleId) => bundleIds.includes(bundleId))
+        bundleIds.length &&
+        invertFor.bundleId.some((id) => bundleIds.includes(id))
       ) {
-        return;
+        shouldInvert = true;
       }
+    }
+
+    if (invertFor.platform && platform) {
+      if (invertFor.platform.includes(platform)) {
+        shouldInvert = true;
+      }
+    }
+
+    if (!shouldInvert) {
+      return;
     }
 
     if (flagConfig.value) {

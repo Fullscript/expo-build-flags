@@ -34,9 +34,7 @@
     "@babel/helper-plugin-utils": "^7.24.8",
     "yaml": "^2.5.1"
   },
-  "peerDependencies": {
-    "typescript": "*"
-  },
+  "peerDependencies": {},
   "scripts": {
     "build": "tsc",
     "test": "npm run test:unit && EXPO_SDK_TARGET=51 ./test/run-integration.sh",

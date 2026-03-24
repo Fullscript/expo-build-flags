@@ -1,6 +1,22 @@
 import { declare } from "@babel/helper-plugin-utils";
+import { existsSync } from "fs";
 import type * as BabelT from "babel__core";
 import { parseTsConstantsModule } from "../api/tsParser";
+import { platformPaths } from "../api/BuildFlags";
+
+const resolveFlagsModule = (
+  flagsModule: string,
+  platform?: string
+): string => {
+  if (platform) {
+    const paths = platformPaths(flagsModule);
+    const platformPath = platform === "ios" ? paths.ios : paths.android;
+    if (existsSync(platformPath)) {
+      return platformPath;
+    }
+  }
+  return flagsModule;
+};
 
 export default declare((babel, options, cwd) => {
   if (process.env.NODE_ENV === "test") {
@@ -26,7 +42,14 @@ export default declare((babel, options, cwd) => {
     );
   }
 
-  const flags = parseTsConstantsModule(options.flagsModule);
+  let callerPlatform: string | undefined;
+  babel.caller?.((caller: any) => {
+    callerPlatform = caller?.platform;
+    return "";
+  });
+
+  const resolvedModule = resolveFlagsModule(options.flagsModule, callerPlatform);
+  const flags = parseTsConstantsModule(resolvedModule);
   const baseModulePath = options.flagsModule
     .split("/")
     .filter((segment) => segment !== ".." && segment !== ".")

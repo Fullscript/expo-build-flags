@@ -32,5 +32,8 @@ node ../test/test-config-plugin.js
 logMark "Running test-config-plugin-android.js"
 node ../test/test-config-plugin-android.js
 
+logMark "Running test-config-plugin-platform-inversion.js"
+node ../test/test-config-plugin-platform-inversion.js
+
 logMark "Running test-autolinking.js"
 node ../test/test-autolinking.js
