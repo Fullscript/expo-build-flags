@@ -36,7 +36,12 @@ Using the `EXPO_BUILD_FLAGS` environment variable, the config plugin will:
 - add a `EXBuildFlags` array to your Info.plist
 - generate the runtime build flags module for your javascript bundle
 
-The variable value is a comma-separated list of flag names you want to enable, ie: `EXPO_BUILD_FLAGS=newFeature,secretFeature`.
+The variable value is a comma-separated list of entries using the same `+`/`-` convention as the `build-flags override` CLI:
+
+- `flagName` or `+flagName` enables a flag.
+- `-flagName` disables a flag (useful for forcing a default-`true` flag to `false` for a given build).
+
+For example, `EXPO_BUILD_FLAGS=newFeature,secretFeature,-legacyDashboard` enables `newFeature` and `secretFeature` and disables `legacyDashboard` for that build, regardless of the defaults committed to `flags.yml`. If the same flag appears with both prefixes, the disable wins.
 
 ### Enable Tree Shaking
 

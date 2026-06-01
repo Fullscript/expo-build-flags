@@ -11,8 +11,8 @@ The config plugin integrates with `expo prebuild` and EAS Build so that flags ar
 
 When a native build runs, the config plugin will:
 
-1. Read `EXPO_BUILD_FLAGS` from the environment (comma-separated flag names)
-2. Generate the runtime `buildFlags.ts` module with those flags enabled
+1. Read `EXPO_BUILD_FLAGS` from the environment (comma-separated, with optional `+`/`-` prefixes -- see [Syntax](#expo_build_flags-syntax))
+2. Generate the runtime `buildFlags.ts` module with the resolved flag values
 3. Add an `EXBuildFlags` array to `Info.plist` (iOS)
 4. Add a `<meta-data android:name="EXBuildFlags">` tag to `AndroidManifest.xml` (Android)
 
@@ -55,6 +55,36 @@ The native metadata is informational -- it lets you inspect which flags a given 
    The generated `buildFlags.ts` will have `newCheckout` and `betaDashboard` set to `true`.
 
 </Steps>
+
+## `EXPO_BUILD_FLAGS` syntax
+
+Entries are comma-separated. Each entry uses the same `+`/`-` convention as the `build-flags override` CLI:
+
+| Entry         | Effect                                              |
+| ------------- | --------------------------------------------------- |
+| `flagName`    | Enable (same as `+flagName`)                        |
+| `+flagName`   | Enable -- explicit form                             |
+| `-flagName`   | Disable -- forces a default-`true` flag to `false`  |
+
+Whitespace around entries (and between the prefix and the name) is ignored, so `" foo, -bar "` is equivalent to `"foo,-bar"`. If the same flag appears with both prefixes, the disable wins.
+
+```json title="eas.json"
+{
+  "build": {
+    "staging": {
+      "env": {
+        "EXPO_BUILD_FLAGS": "newCheckout,-legacyDashboard"
+      }
+    }
+  }
+}
+```
+
+The example above enables `newCheckout` and disables `legacyDashboard` for that build profile, regardless of the defaults committed to `flags.yml`.
+
+:::note
+When `flaggedAutolinking: true` is set on the plugin, only the *enabled* env entries influence autolinking exclusions. Disabling a default-`true` flag via env will flip the runtime value but will not re-introduce its `modules:` exclusions for that build.
+:::
 
 ## Skipping the CLI in EAS
 

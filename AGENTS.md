@@ -68,7 +68,7 @@ Babel plugin (`src/babel-plugin/index.ts`):
 
 Config plugin (`src/config-plugin/index.ts`):
 
-- `EXPO_BUILD_FLAGS=foo,bar` (comma-separated, trimmed) is the only build-time input.
+- `EXPO_BUILD_FLAGS` is the only build-time input. Entries are comma-separated and use the same `+`/`-` prefixes as the CLI: bare or `+name` enables, `-name` disables. Parsing lives in `src/config-plugin/parseEnvFlags.ts`. Disable wins if the same flag appears with both prefixes (downstream calls `flags.enable(...)` before `flags.disable(...)`).
 - Three concurrent mods: `withAndroidManifest` (adds `<meta-data android:name="EXBuildFlags" android:value="..."/>`), `withInfoPlist` (adds `EXBuildFlags` array), and a `withDangerousMod` for both platforms that regenerates the runtime TS module via `generateOverrides`. The dangerous mod is skipped when `skipBundleOverride: true` is passed.
 - `cachedResolvedFlags` is a **module-level cache** so the three mods don't re-read `flags.yml` and `invertFor` resolution stays consistent across native + bundle passes. Same pattern in `withFlaggedAutolinking` via the `exclude` cache. Don't break this without checking the integration tests.
 - `flaggedAutolinking: true` (opt-in) wires the autolinking rewrite. It detects Expo SDK major version by `require("expo/package.json")` from the consumer and dispatches to per-SDK Podfile updaters (`updatePodfileReactNativeAutolinkCallForSDK51` matches `origin_autolinking_method.call(config_command)`; SDK 52+ matches `config = use_native_modules!(config_command)`). Android uses one `settings.gradle` updater for all SDKs.
@@ -89,7 +89,7 @@ Config plugin (`src/config-plugin/index.ts`):
 
 1. `./test/setup.sh` — runs `npm run build`, deletes `example/`, calls `npx create-expo-app --template expo-template-default@$EXPO_SDK_TARGET example`, then `npm install --install-links --save-dev ../` to link this package into the fresh app. For SDK 51 it pins `react-native@~0.75.0`. Copies `test/overrides/default-flags.yml` to `example/flags.yml`.
 2. `test-overrides.sh` — exercises CLI `override` and the programmatic `generateOverrides` API; diffs `example/constants/buildFlags.ts` against `test/overrides/expected-*.ts` (snapshot equality is strict whitespace match).
-3. `test-babel-plugin.js` — bundles with `expo export` twice (flag on, flag off) and greps the bundle for the gated `console.log`.
+3. `test-babel-plugin.js` — bundles with `expo export --platform ios` twice (flag on, flag off) and greps the bundle for the gated `console.log`. Restricted to iOS because the test only asserts iOS output (`dist/_expo/static/js/ios`) and the SDK 51 web bundle pass currently breaks on a transitive `css-in-js-utils` resolution.
 4. `test-config-plugin.js` — patches `flags.yml` in place to add an `invertFor` flag, runs `expo prebuild` with `EXPO_BUILD_FLAGS=secretFeature,newFeature`, asserts AndroidManifest, Info.plist, **and** the regenerated runtime TS module.
 5. `test-config-plugin-android.js` and `test-autolinking.js` — exercise flagged autolinking; the latter uses `expo-native-lockfiles` and `pod-lockfile` to run iOS lockfile generation on Linux.
 

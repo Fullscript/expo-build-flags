@@ -53,7 +53,7 @@ function addBuildFlag() {
 }
 
 function bundleApp() {
-  cp.execSync("yarn expo export --no-bytecode --no-minify --clear", {
+  cp.execSync("yarn expo export --no-bytecode --no-minify --clear --platform ios", {
     stdio: "inherit",
     env: {
       ...process.env,

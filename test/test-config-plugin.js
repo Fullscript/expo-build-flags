@@ -57,7 +57,7 @@ function runPrebuild() {
     env: {
       ...process.env,
       CI: 1,
-      EXPO_BUILD_FLAGS: "secretFeature,newFeature",
+      EXPO_BUILD_FLAGS: "secretFeature,newFeature,-publishedFeature",
     },
   });
 }
@@ -71,32 +71,32 @@ function assertFlagsAllTrue() {
       "\n\n",
       "expected:\n\n",
       `>${expectedRuntimeModule.trim()}<`,
-      "\n\n"
+      "\n\n",
     );
 
     throw new Error(
-      "Expected runtime buildFlags.ts module to contain all flags as true"
+      "Expected runtime buildFlags.ts module to contain all flags as true",
     );
   }
 
   console.log(
-    "Assertion passed: Runtime build flags enabled by config plugin!"
+    "Assertion passed: Runtime build flags enabled by config plugin!",
   );
 }
 
 function assertAndroidManifest() {
   const fileContents = fs.readFileSync(
     "android/app/src/main/AndroidManifest.xml",
-    "utf8"
+    "utf8",
   );
   if (!fileContents.includes(expectedManifestTag)) {
     throw new Error(
-      "Expected AndroidManifest.xml to contain EXBuildFlags meta-data tag"
+      "Expected AndroidManifest.xml to contain EXBuildFlags meta-data tag",
     );
   }
 
   console.log(
-    "Assertion passed: AndroidManifest.xml updated by config plugin!"
+    "Assertion passed: AndroidManifest.xml updated by config plugin!",
   );
 }
 
