@@ -57,7 +57,7 @@ function runPrebuild() {
     env: {
       ...process.env,
       CI: 1,
-      EXPO_BUILD_FLAGS: "secretFeature,newFeature,-publishedFeature",
+      EXPO_BUILD_FLAGS: "secretFeature,newFeature,-publishedFeatured",
     },
   });
 }
