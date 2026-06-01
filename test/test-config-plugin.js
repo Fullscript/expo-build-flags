@@ -6,20 +6,19 @@ const expectedRuntimeModule = `
 export const BuildFlags = {
     bundleIdScopedFeature: true,
     newFeature: true,
-    publishedFeatured: true,
+    publishedFeatured: false,
     secretAndroidFeature: false,
     secretFeature: true
 };
 `;
 
 const expectedManifestTag =
-  '<meta-data android:name="EXBuildFlags" android:value="secretFeature,publishedFeatured,newFeature,bundleIdScopedFeature"/>';
+  '<meta-data android:name="EXBuildFlags" android:value="secretFeature,newFeature,bundleIdScopedFeature"/>';
 
 const expectedPlistFlagArray = `
     <key>EXBuildFlags</key>
     <array>
       <string>secretFeature</string>
-      <string>publishedFeatured</string>
       <string>newFeature</string>
       <string>bundleIdScopedFeature</string>
     </array>
@@ -28,7 +27,7 @@ const expectedPlistFlagArray = `
 addBundleIdScopedFlag();
 installExpoConfigPlugin();
 runPrebuild();
-assertFlagsAllTrue();
+assertFlagsAllAsExpected();
 assertAndroidManifest();
 assertInfoPlist();
 
@@ -62,7 +61,7 @@ function runPrebuild() {
   });
 }
 
-function assertFlagsAllTrue() {
+function assertFlagsAllAsExpected() {
   const fileContents = fs.readFileSync("constants/buildFlags.ts", "utf8");
   if (fileContents.trim() !== expectedRuntimeModule.trim()) {
     console.log(
