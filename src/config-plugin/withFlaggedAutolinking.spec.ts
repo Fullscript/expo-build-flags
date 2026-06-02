@@ -2,7 +2,9 @@ import fs from "fs";
 import { jest, describe, it, expect, beforeEach } from "@jest/globals";
 import {
   updateGradleReactNativeAutolinkCall,
+  updateGradleReactNativeAutolinkCallForSDK54,
   updateGradleExpoModulesAutolinkCall,
+  updateGradleExpoModulesAutolinkCallForSDK54,
   updatePodfileReactNativeAutolinkCallForSDK51,
   updatePodfileExpoModulesAutolinkCall,
 } from "./withFlaggedAutolinking";
@@ -92,6 +94,74 @@ describe("withFlaggedAutolinking", () => {
 
       expect(updatedLine).toBe(
         `useExpoModules(exclude: ["react-native-device-info","some-other-module"])`
+      );
+    });
+  });
+
+  describe("updateGradleReactNativeAutolinkCallForSDK54", () => {
+    const gradleSettingsContents = fs.readFileSync(
+      "src/config-plugin/fixtures/settings.gradle.sdk54",
+      "utf8"
+    );
+
+    it("should replace expoAutolinking.rnConfigCommand with build-flags command", () => {
+      const updatedContents = updateGradleReactNativeAutolinkCallForSDK54(
+        gradleSettingsContents,
+        {
+          exclude: ["react-native-device-info", "react-native-reanimated"],
+        }
+      );
+
+      expect(updatedContents).not.toContain("expoAutolinking.rnConfigCommand");
+
+      const updatedLineIndex = updatedContents
+        .split("\n")
+        .findIndex((line) =>
+          line.trim().startsWith("// expo-build-flags autolinking override")
+        );
+      expect(updatedLineIndex).toBeGreaterThan(-1);
+
+      const snapshotLineOffset = updatedLineIndex + 1;
+      const linesToSnapshot = 5;
+      const matchLines = updatedContents
+        .split("\n")
+        .slice(snapshotLineOffset, snapshotLineOffset + linesToSnapshot)
+        .join("\n");
+      expect(matchLines).toMatchInlineSnapshot(`
+"    ex.autolinkLibrariesFromCommand([
+      './node_modules/.bin/build-flags-autolinking',
+      '-p', 'android',
+      '-x', 'react-native-device-info', '-x', 'react-native-reanimated'
+    ].toList())"
+`);
+    });
+  });
+
+  describe("updateGradleExpoModulesAutolinkCallForSDK54", () => {
+    const gradleSettingsContents = fs.readFileSync(
+      "src/config-plugin/fixtures/settings.gradle.sdk54",
+      "utf8"
+    );
+
+    it("should set expoAutolinking.exclude before useExpoModules()", () => {
+      const updatedContents = updateGradleExpoModulesAutolinkCallForSDK54(
+        gradleSettingsContents,
+        {
+          exclude: ["react-native-device-info", "some-other-module"],
+        }
+      );
+      const lines = updatedContents.split("\n");
+      const excludeLineIndex = lines.findIndex((line) =>
+        line.trim().startsWith("expoAutolinking.exclude")
+      );
+      const useExpoModulesLineIndex = lines.findIndex((line) =>
+        line.trim().endsWith("useExpoModules()")
+      );
+
+      expect(excludeLineIndex).toBeGreaterThan(-1);
+      expect(useExpoModulesLineIndex).toBe(excludeLineIndex + 1);
+      expect(lines[excludeLineIndex]).toBe(
+        `expoAutolinking.exclude = ["react-native-device-info","some-other-module"]`
       );
     });
   });

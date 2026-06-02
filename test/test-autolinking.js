@@ -56,7 +56,7 @@ async function runPrebuild() {
   // before we can run pod-lockfile on a podfile for an RN app
   // we need to mock out mac-specific calls for our linux CI environment
   const podfilePath = path.resolve("./ios", "Podfile");
-  await mockXcodebuild({ debug: true, xcVersion: "15.4" });
+  await mockXcodebuild({ debug: true, xcVersion: "100.0" });
   await disablePodfilePrepareHook({ debug: true, podfilePath });
 
   cp.execSync("../node_modules/.bin/pod-lockfile --debug --project ios", {
@@ -74,7 +74,7 @@ function assertPodfileLockExcludesModules() {
   // assertion for core linking exclusion
   if (podfileLock.includes("Reanimated")) {
     throw new Error(
-      "Expected ios/Podfile.lock to exclude react-native-reanimated"
+      "Expected ios/Podfile.lock to exclude react-native-reanimated",
     );
   }
 
@@ -102,7 +102,9 @@ function assertGradleProjectExcludesModules() {
 
         if (!stdout.includes("+--- Project ':app'")) {
           reject(
-            new Error("Expected android project to include base project ':app'")
+            new Error(
+              "Expected android project to include base project ':app'",
+            ),
           );
           return;
         }
@@ -110,15 +112,15 @@ function assertGradleProjectExcludesModules() {
         if (stdout.includes("+--- Project ':react-native-reanimated'")) {
           reject(
             new Error(
-              "Expected android project to exclude react-native-reanimated"
-            )
+              "Expected android project to exclude react-native-reanimated",
+            ),
           );
           return;
         }
 
         console.log("assertGradleProjectExcludesModules passed!");
         resolve();
-      }
+      },
     );
   });
 }
@@ -131,7 +133,7 @@ function logEnv() {
       (error, stdout, stderr) => {
         console.log(stdout);
         resolve();
-      }
+      },
     );
   });
 }
