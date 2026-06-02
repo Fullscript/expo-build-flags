@@ -22,6 +22,10 @@ if [ "$EXPO_SDK_TARGET" -eq "51" ]; then
 	npm install --save react-native@~0.75.0
 fi
 
+if [ "$EXPO_SDK_TARGET" -eq "52" ]; then
+	npx expo install expo-asset
+fi
+
 npm install --save-dev babel-preset-expo
 npm install --install-links --save-dev ../
 
