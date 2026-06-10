@@ -16,6 +16,7 @@ import pkg from "../../package.json";
 import { withFlaggedAutolinking } from "./withFlaggedAutolinking";
 import { mergeSets } from "../api/mergeSets";
 import { parseEnvFlags } from "./parseEnvFlags";
+import { debug } from "../api/debug";
 
 type EnvFlagSets = {
   flagsToEnable: Set<string>;
@@ -46,6 +47,12 @@ const resolveAllEnabledFlags = async ({
     flagsToEnable,
     flagsToDisable,
   });
+  debug(
+    "resolved enabled flags (enable=%o disable=%o) -> %o",
+    Array.from(flagsToEnable),
+    Array.from(flagsToDisable),
+    cachedResolvedFlags
+  );
   return cachedResolvedFlags;
 };
 
@@ -64,6 +71,10 @@ const withAndroidBuildFlags: ConfigPlugin<NativeFlagPluginProps> = (
     }
 
     const resolvedFlags = await resolveAllEnabledFlags(props);
+    debug(
+      "writing EXBuildFlags to AndroidManifest.xml: %s",
+      resolvedFlags.join(",")
+    );
 
     const meta = mainApplication["meta-data"];
     mainApplication["meta-data"] = [
@@ -86,6 +97,7 @@ const withAppleBuildFlags: ConfigPlugin<NativeFlagPluginProps> = (
 ) => {
   return withInfoPlist(config, async (config) => {
     const resolvedFlags = await resolveAllEnabledFlags(props);
+    debug("writing EXBuildFlags to Info.plist: %o", resolvedFlags);
     config.modResults.EXBuildFlags = resolvedFlags;
     return config;
   });

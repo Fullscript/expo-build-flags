@@ -2,6 +2,7 @@ import fs from "fs";
 import path from "path";
 import { ConfigPlugin, withDangerousMod } from "@expo/config-plugins";
 import { readConfigModuleExclusions } from "../api/readConfig";
+import { debug } from "../api/debug";
 
 type Props = { flags: string[]; expoMajorVersion: number };
 
@@ -60,6 +61,11 @@ const withFlaggedAutolinkingForApple: ConfigPlugin<Props> = (
 
       contents = setupRNModuleLinking(contents, { exclude });
       contents = setupExpoModuleLinking(contents, { exclude });
+      debug(
+        "writing autolinking exclusions to Podfile %s: %o",
+        podfile,
+        exclude
+      );
       await fs.promises.writeFile(podfile, contents, "utf8");
       return config;
     },
@@ -90,6 +96,11 @@ const withFlaggedAutolinkingForAndroid: ConfigPlugin<Props> = (
         androidExpoLinkingLookup.default;
       contents = setupRNModuleLinking(contents, { exclude });
       contents = setupExpoModuleLinking(contents, { exclude });
+      debug(
+        "writing autolinking exclusions to settings.gradle %s: %o",
+        gradleSettings,
+        exclude
+      );
       await fs.promises.writeFile(gradleSettings, contents, "utf8");
       return config;
     },

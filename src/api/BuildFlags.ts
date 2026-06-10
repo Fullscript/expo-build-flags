@@ -4,6 +4,7 @@ import { resolve } from "path";
 import { printAsTs } from "./tsPrinter";
 import { getCIBranch } from "./ciHelpers";
 import { hasMatch } from "./globUtil";
+import { debug } from "./debug";
 
 export class BuildFlags {
   flags: FlagMap;
@@ -33,6 +34,7 @@ export class BuildFlags {
       return;
     }
 
+    debug("enabling branch flags for branch %s: %o", branch, branchFlags);
     this.enable(new Set(branchFlags));
   }
 
@@ -41,6 +43,7 @@ export class BuildFlags {
       if (!this.flags[enable]) {
         throw new Error(`Flag ${enable} does not exist, could not enable`);
       }
+      debug("resolve: enabling flag %s (was %o)", enable, this.flags[enable].value);
       this.flags[enable].value = true;
     });
   }
@@ -50,20 +53,28 @@ export class BuildFlags {
       if (!this.flags[disable]) {
         throw new Error(`Flag ${disable} does not exist, could not disable`);
       }
+      debug("resolve: disabling flag %s (was %o)", disable, this.flags[disable].value);
       this.flags[disable].value = false;
     });
   }
 
   async save(path: string) {
+    const resolvedValues = Object.fromEntries(
+      Object.entries(this.flags).map(([name, config]) => [name, config.value])
+    );
     if (path.endsWith(".json")) {
       const flags = JSON.stringify(this.flags, null, 2);
-      await writeFile(resolve(path), flags);
+      const dest = resolve(path);
+      debug("writing resolved flags to mergePath %s (json): %o", dest, resolvedValues);
+      await writeFile(dest, flags);
       return;
     }
 
     if (path.endsWith(".ts")) {
       const ts = printAsTs(this.flags);
-      await writeFile(resolve(path), ts);
+      const dest = resolve(path);
+      debug("writing resolved flags to mergePath %s (ts): %o", dest, resolvedValues);
+      await writeFile(dest, ts);
       return;
     }
 
