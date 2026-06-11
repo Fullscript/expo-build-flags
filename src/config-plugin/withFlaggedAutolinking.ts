@@ -17,31 +17,35 @@ type Props = FlagSets & { expoMajorVersion: number };
 
 type Updater = (contents: string, { exclude }: { exclude: string[] }) => string;
 
-const appleRNLinkingLookup: Record<number | "default", Updater> = {
+export const appleRNLinkingLookup: Record<number | "default", Updater> = {
   51: updatePodfileReactNativeAutolinkCallForSDK51,
   52: updatePodfileReactNativeAutolinkCallForSDK52,
+  55: updatePodfileReactNativeAutolinkCallForSDK52,
   default: updatePodfileReactNativeAutolinkCallForSDK52,
 };
 
-const appleExpoLinkingLookup: Record<number | "default", Updater> = {
+export const appleExpoLinkingLookup: Record<number | "default", Updater> = {
   51: updatePodfileExpoModulesAutolinkCall,
   52: updatePodfileExpoModulesAutolinkCall,
+  55: updatePodfileExpoModulesAutolinkCall,
   default: updatePodfileExpoModulesAutolinkCall,
 };
 
-const androidExpoLinkingLookup: Record<number | "default", Updater> = {
+export const androidExpoLinkingLookup: Record<number | "default", Updater> = {
   51: updateGradleExpoModulesAutolinkCall,
   52: updateGradleExpoModulesAutolinkCall,
   53: updateGradleExpoModulesAutolinkCall,
   54: updateGradleExpoModulesAutolinkCallForSDK54,
+  55: updateGradleExpoModulesAutolinkCallForSDK54,
   default: updateGradleExpoModulesAutolinkCallForSDK54,
 };
 
-const androidRNLinkingLookup: Record<number | "default", Updater> = {
+export const androidRNLinkingLookup: Record<number | "default", Updater> = {
   51: updateGradleReactNativeAutolinkCall,
   52: updateGradleReactNativeAutolinkCall,
   53: updateGradleReactNativeAutolinkCall,
   54: updateGradleReactNativeAutolinkCallForSDK54,
+  55: updateGradleReactNativeAutolinkCallForSDK54,
   default: updateGradleReactNativeAutolinkCallForSDK54,
 };
 

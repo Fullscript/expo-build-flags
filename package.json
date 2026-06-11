@@ -41,7 +41,7 @@
   },
   "scripts": {
     "build": "tsc",
-    "test": "npm run test:unit && EXPO_SDK_TARGET=54 ./test/run-integration.sh",
+    "test": "npm run test:unit && EXPO_SDK_TARGET=55 ./test/run-integration.sh",
     "test:unit": "./node_modules/.bin/jest"
   }
 }

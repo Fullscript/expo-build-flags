@@ -26,6 +26,11 @@ if [ "$EXPO_SDK_TARGET" -eq "52" ]; then
 	npx expo install expo-asset
 fi
 
+if [ "$EXPO_SDK_TARGET" -eq "55" ]; then
+	echo "Using expo SDK 55 with react-native 0.83.0"
+	npm install --save react-native@~0.83.0
+fi
+
 npm install --save-dev babel-preset-expo
 npm install --install-links --save-dev ../
 

@@ -1,6 +1,8 @@
 const fs = require("fs");
 const cp = require("child_process");
 
+const isExpo55 = (process.env.EXPO_SDK_TARGET = "55");
+
 const fallbackBabelConfig = `
 module.exports = function (api) {
   api.cache(true);
@@ -40,6 +42,21 @@ function generateBuildFlagsModule() {
 }
 
 function addBuildFlag() {
+  if (isExpo55) {
+    const homeTab = fs.readFileSync("src/app/index.tsx", "utf8");
+    const searchStr = "function getDevMenuHint() {";
+    let replaceStr = "import { BuildFlags } from '../../constants/buildFlags'";
+    replaceStr += "\n\n";
+    replaceStr +=
+      "if (BuildFlags.newFeature) { console.log('New feature enabled!') }";
+    replaceStr += "\n\n";
+    replaceStr += "function getDevMenuHint() {";
+    const newHomeTab = homeTab.replace(searchStr, replaceStr);
+    fs.writeFileSync("src/app/index.tsx", newHomeTab);
+
+    return;
+  }
+
   const homeTab = fs.readFileSync("app/(tabs)/index.tsx", "utf8");
   const searchStr = "export default function HomeScreen() {";
   let replaceStr = "import { BuildFlags } from '../../constants/buildFlags'";
@@ -53,29 +70,32 @@ function addBuildFlag() {
 }
 
 function bundleApp() {
-  cp.execSync("yarn expo export --no-bytecode --no-minify --clear --platform ios", {
-    stdio: "inherit",
-    env: {
-      ...process.env,
-      CI: "1",
+  cp.execSync(
+    "yarn expo export --no-bytecode --no-minify --clear --platform ios",
+    {
+      stdio: "inherit",
+      env: {
+        ...process.env,
+        CI: "1",
+      },
     },
-  });
+  );
 }
 
 function bundleAppAsJestAndAssertNoFolding() {
   const result = cp.execSync(
-    "../node_modules/.bin/babel app/\\(tabs\\)/index.tsx --plugins=expo-build-flags/babel-plugin",
+    `../node_modules/.bin/babel ${isExpo55 ? `src/app` : `app/\\(tabs\\)`}/index.tsx --plugins=expo-build-flags/babel-plugin`,
     {
       env: {
         ...process.env,
         NODE_ENV: "test",
       },
-    }
+    },
   );
 
   if (result.toString().includes("New feature enabled!") === false) {
     throw new Error(
-      "Assertion failed: Build flag not found in jest build result"
+      "Assertion failed: Build flag not found in jest build result",
     );
   }
 
