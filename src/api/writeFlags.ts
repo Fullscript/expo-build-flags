@@ -1,6 +1,6 @@
-import { writeFile, unlink } from "fs/promises";
+import { writeFile, unlink, mkdir } from "fs/promises";
 import { existsSync } from "fs";
-import { resolve as resolvePath } from "path";
+import { resolve as resolvePath, dirname } from "path";
 import { FlagMap } from "./types";
 import { printAsTs } from "./tsPrinter";
 import { valuesDiffer } from "./resolve";
@@ -17,6 +17,7 @@ export const platformPaths = (basePath: string) => {
 
 const writeOne = async (path: string, flags: FlagMap) => {
   const dest = resolvePath(path);
+  await mkdir(dirname(dest), { recursive: true });
   if (path.endsWith(".ts")) {
     await writeFile(dest, printAsTs(flags));
     return;
