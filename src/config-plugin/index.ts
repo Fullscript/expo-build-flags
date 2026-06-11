@@ -7,14 +7,9 @@ import {
   withInfoPlist,
 } from "@expo/config-plugins";
 import { ExpoConfig } from "@expo/config-types";
-import {
-  generateOverrides,
-  resolveEnabledFlagNames,
-  resolveFlagsToInvert,
-} from "../api";
+import { generateOverrides, resolveEnabledFlagNames } from "../api";
 import pkg from "../../package.json";
 import { withFlaggedAutolinking } from "./withFlaggedAutolinking";
-import { mergeSets } from "../api/mergeSets";
 import { parseEnvFlags } from "./parseEnvFlags";
 import { debug } from "../api/debug";
 
@@ -25,36 +20,16 @@ type EnvFlagSets = {
 
 type NativeFlagPluginProps = EnvFlagSets & { expoConfig: ExpoConfig };
 
-let cachedResolvedFlags: string[] | null = null;
-const resolveAllEnabledFlags = async ({
-  flagsToEnable: envEnable,
-  flagsToDisable: envDisable,
-  expoConfig,
-}: NativeFlagPluginProps): Promise<string[]> => {
-  if (cachedResolvedFlags) {
-    return cachedResolvedFlags;
-  }
-  let flagsToEnable = new Set(envEnable);
-  let flagsToDisable = new Set(envDisable);
-  const invertable = await resolveFlagsToInvert(expoConfig);
-  if (invertable.flagsToEnable.size > 0) {
-    flagsToEnable = mergeSets(flagsToEnable, invertable.flagsToEnable);
-  }
-  if (invertable.flagsToDisable.size > 0) {
-    flagsToDisable = mergeSets(flagsToDisable, invertable.flagsToDisable);
-  }
-  cachedResolvedFlags = await resolveEnabledFlagNames({
-    flagsToEnable,
-    flagsToDisable,
+const resolveEnabledFor = (
+  props: NativeFlagPluginProps,
+  platform: "ios" | "android"
+) =>
+  resolveEnabledFlagNames({
+    flagsToEnable: props.flagsToEnable,
+    flagsToDisable: props.flagsToDisable,
+    expoConfig: props.expoConfig,
+    platform,
   });
-  debug(
-    "resolved enabled flags (enable=%o disable=%o) -> %o",
-    Array.from(flagsToEnable),
-    Array.from(flagsToDisable),
-    cachedResolvedFlags
-  );
-  return cachedResolvedFlags;
-};
 
 const withAndroidBuildFlags: ConfigPlugin<NativeFlagPluginProps> = (
   config,
@@ -70,7 +45,7 @@ const withAndroidBuildFlags: ConfigPlugin<NativeFlagPluginProps> = (
       throw new Error("Application node not found in AndroidManifest.xml");
     }
 
-    const resolvedFlags = await resolveAllEnabledFlags(props);
+    const resolvedFlags = await resolveEnabledFor(props, "android");
     debug(
       "writing EXBuildFlags to AndroidManifest.xml: %s",
       resolvedFlags.join(",")
@@ -96,64 +71,40 @@ const withAppleBuildFlags: ConfigPlugin<NativeFlagPluginProps> = (
   props
 ) => {
   return withInfoPlist(config, async (config) => {
-    const resolvedFlags = await resolveAllEnabledFlags(props);
+    const resolvedFlags = await resolveEnabledFor(props, "ios");
     debug("writing EXBuildFlags to Info.plist: %o", resolvedFlags);
     config.modResults.EXBuildFlags = resolvedFlags;
     return config;
   });
 };
 
-type BundlePluginProps = EnvFlagSets;
+type BundlePluginProps = NativeFlagPluginProps;
 
-const createCrossPlatformMod =
-  ({
-    config,
-    props,
-  }: {
-    config: ExpoConfig;
-    props: BundlePluginProps;
-  }): Mod<unknown> =>
+const createBundleMod =
+  (props: BundlePluginProps): Mod<unknown> =>
   async (modConfig) => {
-    let flagsToEnable = new Set(props.flagsToEnable);
-    let flagsToDisable = new Set(props.flagsToDisable);
-    const invertable = await resolveFlagsToInvert(config);
-    if (invertable.flagsToEnable.size > 0) {
-      flagsToEnable = mergeSets(flagsToEnable, invertable.flagsToEnable);
+    if (bundleGenerated) {
+      return modConfig;
     }
-    if (invertable.flagsToDisable.size > 0) {
-      flagsToDisable = mergeSets(flagsToDisable, invertable.flagsToDisable);
-    }
+    bundleGenerated = true;
     await generateOverrides({
-      flagsToEnable,
-      flagsToDisable,
+      flagsToEnable: props.flagsToEnable,
+      flagsToDisable: props.flagsToDisable,
+      expoConfig: props.expoConfig,
     });
     return modConfig;
   };
 
-const withAndroidBundleBuildFlags: ConfigPlugin<BundlePluginProps> = (
-  config,
-  props
-) => {
-  return withDangerousMod(config, [
-    "android",
-    createCrossPlatformMod({ config, props }),
-  ]);
-};
-
-const withAppleBundleBuildFlags: ConfigPlugin<BundlePluginProps> = (
-  config,
-  props
-) => {
-  return withDangerousMod(config, [
-    "ios",
-    createCrossPlatformMod({ config, props }),
-  ]);
-};
+// generateOverrides resolves both platforms internally and writes the runtime
+// module(s) in one shot, so we only need to run once. We register the mod on
+// both platforms (guarded) so a single-platform prebuild (e.g. `-p android`)
+// still regenerates the module.
+let bundleGenerated = false;
 
 const withBundleFlags: ConfigPlugin<BundlePluginProps> = (config, props) => {
-  return withAppleBundleBuildFlags(
-    withAndroidBundleBuildFlags(config, props),
-    props
+  return withDangerousMod(
+    withDangerousMod(config, ["ios", createBundleMod(props)]),
+    ["android", createBundleMod(props)]
   );
 };
 
@@ -161,11 +112,16 @@ type ConfigPluginProps =
   | { skipBundleOverride?: boolean; flaggedAutolinking?: boolean }
   | undefined;
 
-type WithBuildFlagsProps = EnvFlagSets & { skipBundleOverride?: boolean };
+type WithBuildFlagsProps = NativeFlagPluginProps & {
+  skipBundleOverride?: boolean;
+};
 
 const withBuildFlags: ConfigPlugin<WithBuildFlagsProps> = (config, props) => {
-  const { flagsToEnable, flagsToDisable } = props;
-  const nativeProps = { flagsToEnable, flagsToDisable, expoConfig: config };
+  const nativeProps = {
+    flagsToEnable: props.flagsToEnable,
+    flagsToDisable: props.flagsToDisable,
+    expoConfig: config,
+  };
 
   const nativeConfig = withAndroidBuildFlags(config, nativeProps);
   const mergedNativeConfig = withAppleBuildFlags(nativeConfig, nativeProps);
@@ -173,7 +129,7 @@ const withBuildFlags: ConfigPlugin<WithBuildFlagsProps> = (config, props) => {
     return mergedNativeConfig;
   }
 
-  return withBundleFlags(mergedNativeConfig, { flagsToEnable, flagsToDisable });
+  return withBundleFlags(mergedNativeConfig, nativeProps);
 };
 
 const withBuildFlagsAndLinking: ConfigPlugin<ConfigPluginProps> = (
@@ -184,16 +140,19 @@ const withBuildFlagsAndLinking: ConfigPlugin<ConfigPluginProps> = (
   const { flagsToEnable, flagsToDisable } = parseEnvFlags();
 
   if (props?.flaggedAutolinking) {
-    // Autolinking only consults the enable list: a flag forced ON at build time
-    // should not have its native modules excluded. Disabling a default-true flag
-    // via env does not currently re-introduce module exclusions for it; that
-    // would require resolving the merged flag state before computing exclusions.
     mergedConfig = withFlaggedAutolinking(mergedConfig, {
-      flags: Array.from(flagsToEnable),
+      flagsToEnable,
+      flagsToDisable,
+      expoConfig: config,
     });
   }
 
-  return withBuildFlags(config, { ...props, flagsToEnable, flagsToDisable });
+  return withBuildFlags(mergedConfig, {
+    ...props,
+    flagsToEnable,
+    flagsToDisable,
+    expoConfig: config,
+  });
 };
 
 export default createRunOncePlugin(

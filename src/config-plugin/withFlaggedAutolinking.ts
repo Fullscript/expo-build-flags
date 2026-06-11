@@ -1,10 +1,19 @@
 import fs from "fs";
 import path from "path";
 import { ConfigPlugin, withDangerousMod } from "@expo/config-plugins";
-import { readConfigModuleExclusions } from "../api/readConfig";
+import { ExpoConfig } from "@expo/config-types";
+import { resolveModuleExclusions } from "../api/readConfig";
+import { resolveFlags } from "../api/generateOverrides";
+import { Platform } from "../api/types";
 import { debug } from "../api/debug";
 
-type Props = { flags: string[]; expoMajorVersion: number };
+type FlagSets = {
+  flagsToEnable: Set<string>;
+  flagsToDisable: Set<string>;
+  expoConfig: ExpoConfig;
+};
+
+type Props = FlagSets & { expoMajorVersion: number };
 
 type Updater = (contents: string, { exclude }: { exclude: string[] }) => string;
 
@@ -38,8 +47,9 @@ const androidRNLinkingLookup: Record<number | "default", Updater> = {
 
 const withFlaggedAutolinkingForApple: ConfigPlugin<Props> = (
   config,
-  { flags, expoMajorVersion }
+  props
 ) => {
+  const { expoMajorVersion } = props;
   return withDangerousMod(config, [
     "ios",
     async (config) => {
@@ -48,7 +58,7 @@ const withFlaggedAutolinkingForApple: ConfigPlugin<Props> = (
         "Podfile"
       );
       let contents = await fs.promises.readFile(podfile, "utf8");
-      const exclude = await getExclusions(flags);
+      const exclude = await getExclusions(props, "ios");
       if (!exclude.length) {
         return config;
       }
@@ -74,8 +84,9 @@ const withFlaggedAutolinkingForApple: ConfigPlugin<Props> = (
 
 const withFlaggedAutolinkingForAndroid: ConfigPlugin<Props> = (
   config,
-  { flags, expoMajorVersion }
+  props
 ) => {
+  const { expoMajorVersion } = props;
   return withDangerousMod(config, [
     "android",
     async (config) => {
@@ -84,7 +95,7 @@ const withFlaggedAutolinkingForAndroid: ConfigPlugin<Props> = (
         "settings.gradle"
       );
       let contents = await fs.promises.readFile(gradleSettings, "utf8");
-      const exclude = await getExclusions(flags);
+      const exclude = await getExclusions(props, "android");
       if (!exclude.length) {
         return config;
       }
@@ -107,7 +118,7 @@ const withFlaggedAutolinkingForAndroid: ConfigPlugin<Props> = (
   ]);
 };
 
-export const withFlaggedAutolinking: ConfigPlugin<{ flags: string[] }> = (
+export const withFlaggedAutolinking: ConfigPlugin<FlagSets> = (
   config,
   props
 ) => {
@@ -259,11 +270,19 @@ export function updateGradleExpoModulesAutolinkCallForSDK54(
   );
 }
 
-let exclude: string[] | null = null;
-async function getExclusions(flagOverrides?: string[]) {
-  if (Array.isArray(exclude)) {
-    return exclude;
+const excludeCache: Partial<Record<Platform, string[]>> = {};
+async function getExclusions(props: FlagSets, platform: Platform) {
+  const cached = excludeCache[platform];
+  if (cached) {
+    return cached;
   }
-  exclude = await readConfigModuleExclusions(flagOverrides);
-  return exclude;
+  const resolved = await resolveFlags({
+    flagsToEnable: props.flagsToEnable,
+    flagsToDisable: props.flagsToDisable,
+    expoConfig: props.expoConfig,
+    platform,
+  });
+  const result = await resolveModuleExclusions(resolved);
+  excludeCache[platform] = result;
+  return result;
 }

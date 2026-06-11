@@ -1,13 +1,28 @@
 import {
   generateOverrides,
+  generateSharedOverrides,
   resolveEnabledFlagNames,
+  resolveFlags,
 } from "./generateOverrides";
-import { resolveFlagsToInvert } from "./resolveFlagsToInvert";
-import { readConfig } from "./readConfig";
+import {
+  resolve,
+  enabledNames,
+  valuesDiffer,
+  hasPlatformInversions,
+  hasBundleIdInversions,
+} from "./resolve";
+import { readConfig, resolveModuleExclusions } from "./readConfig";
 
 export {
   generateOverrides,
+  generateSharedOverrides,
   resolveEnabledFlagNames,
-  resolveFlagsToInvert,
+  resolveFlags,
+  resolve,
+  enabledNames,
+  valuesDiffer,
+  hasPlatformInversions,
+  hasBundleIdInversions,
   readConfig,
+  resolveModuleExclusions,
 };

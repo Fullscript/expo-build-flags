@@ -16,7 +16,21 @@ The arguments after the override command are the flags you want to `+` enable or
 
 You can run `yarn build-flags ota-override` instead of "override" to do the same but also consider the branch name in two supported CI environments: Github and Gitlab. Use the `ota.branches` array in the flags.yml to setup that matching and branch-based enablement.
 
-Use `--skip-if-env <ENV_VAR_NAME>` passing the name of the environment variable to check. If the variable has a truthy value the CLI command will be a no-op/skipped. This can be useful in CI contexts like EAS where other processes may handle generating the runtime build flags. In the case of EAS you could use `--skip-if-env EAS_BUILD`
+### Resolution model
+
+Both the CLI and the config plugin resolve flag values through one canonical
+function with a fixed precedence (later steps win):
+
+1. defaults (the `value` in flags.yml)
+2. branch enablement (`ota.branches`, only with `ota-override` / in CI)
+3. inversions (`invertFor.bundleId` / `invertFor.platform`)
+4. explicit enable (`+flag` / `EXPO_BUILD_FLAGS`)
+5. explicit disable (`-flag` / `EXPO_BUILD_FLAGS`) — disable always wins
+
+When a flag's `invertFor` uses `bundleId`, the CLI resolves your project's Expo
+config (via `expo config --json`) so it sees the same — possibly dynamically
+derived — bundle identifier the config plugin sees at prebuild. This subprocess
+only runs when the spec actually contains a `bundleId` matcher.
 
 ### Set Flags in CI & for Static Builds
 
@@ -97,7 +111,33 @@ flags:
         - com.example.app.special
 ```
 
-With the preceding config and the expo config-plugin installed, the `featureOnForSpecificBundleId` flag is true for native builds that have the matching bundleId. This inversion only applies during a new native build with expo prebuild. To invert the flag during development you should still use the command line tooling.
+With the preceding config and the expo config-plugin installed, the `featureOnForSpecificBundleId` flag is true for native builds that have the matching bundleId.
+
+You can also invert based on the platform being built:
+
+```yaml
+flags:
+  iosOnlyFeature:
+    value: false
+    invertFor:
+      platform:
+        - ios
+```
+
+If both `bundleId` and `platform` are specified, the inversion fires when
+**either** matches.
+
+When a `platform` matcher causes a flag to resolve differently across iOS and
+Android, the runtime module is emitted per platform as `<mergePath>.ios.ts` and
+`<mergePath>.android.ts` instead of the single `mergePath` file (the stale form
+is cleaned up automatically). The babel plugin selects the correct file for the
+platform being compiled; if you import the module directly at runtime, Metro's
+platform resolution picks it up. When no flag diverges across platforms, a
+single shared module is written as before.
+
+Unlike before, both the CLI and the config plugin apply `invertFor` — the CLI
+resolves the Expo config when a `bundleId` matcher is present so its output
+agrees with the plugin's.
 
 ## Goals
 
@@ -105,6 +145,8 @@ With the preceding config and the expo config-plugin installed, the `featureOnFo
 - [x] allow for overriding a flag's value locally during development (without having to change the default value committed to source control)
 - [x] allow for running OTA updates with the flag on for specific CI branches
 - [x] allow for overriding a flag's value for any native build for one-off testing
+- [x] allow flag values to resolve per-platform (iOS vs Android) via `invertFor.platform`
+- [x] unify CLI and config-plugin resolution so their core flag output always agrees
 - [x] allow for referencing flag values in JS
 - [ ] allow for referencing flag values from native code on iOS or Android
 - [x] allow for tree-shaking of the JS bundle and dead code path elimination

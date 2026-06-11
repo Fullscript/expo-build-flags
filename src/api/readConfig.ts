@@ -1,6 +1,6 @@
 import YAML from "yaml";
 import { readFile } from "fs/promises";
-import { FlagsConfig } from "./types";
+import { FlagMap, FlagsConfig } from "./types";
 
 export const readConfig = async (): Promise<FlagsConfig> => {
   try {
@@ -45,35 +45,42 @@ const getGitBranchName = async () => {
   }
 };
 
-export const readConfigModuleExclusions = async (
-  flagOverrides?: string[]
+/**
+ * Compute the native modules to exclude from autolinking, given an already
+ * resolved FlagMap (values applied for the target platform, including any
+ * inversions / env overrides). A module is excluded when its owning flag
+ * resolves false, unless a per-module `branch` allowance matches the current
+ * git branch (which keeps the module linked so a build can run on that branch).
+ */
+export const resolveModuleExclusions = async (
+  resolved: FlagMap
 ): Promise<string[]> => {
-  const { flags } = await readConfig();
   const branch = await getGitBranchName();
-  return Object.keys(flags)
-    .filter((flag) => !flags[flag].value)
+  return Object.keys(resolved)
+    .filter((flag) => !resolved[flag].value)
     .reduce((acc, flag) => {
-      if (flags[flag].modules && !flagOverrides?.includes(flag)) {
-        return [
-          ...acc,
-          ...flags[flag].modules
-            .map((mod) => {
-              if (typeof mod === "string") {
-                return mod;
-              }
-              const [[modName, modConfig]] = Object.entries(mod);
-              if (
-                typeof modConfig === "object" &&
-                "branch" in modConfig &&
-                // @ts-expect-error ts inference issue
-                modConfig.branch !== branch
-              ) {
-                return modName;
-              }
-            })
-            .filter((mod): mod is string => typeof mod === "string"),
-        ];
+      const modules = resolved[flag].modules;
+      if (!modules) {
+        return acc;
       }
-      return acc;
+      return [
+        ...acc,
+        ...modules
+          .map((mod) => {
+            if (typeof mod === "string") {
+              return mod;
+            }
+            const [[modName, modConfig]] = Object.entries(mod);
+            if (
+              typeof modConfig === "object" &&
+              "branch" in modConfig &&
+              // @ts-expect-error ts inference issue
+              modConfig.branch !== branch
+            ) {
+              return modName;
+            }
+          })
+          .filter((mod): mod is string => typeof mod === "string"),
+      ];
     }, [] as string[]);
 };
