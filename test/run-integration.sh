@@ -37,3 +37,6 @@ node ../test/test-autolinking.js
 
 logMark "Running test-config-plugin-platform-inversion.js"
 node ../test/test-config-plugin-platform-inversion.js
+
+logMark "Running test-config-plugin-bundleid-platform-scope.js"
+node ../test/test-config-plugin-bundleid-platform-scope.js
