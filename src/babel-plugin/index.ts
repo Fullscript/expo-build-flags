@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs";
 import { declare } from "@babel/helper-plugin-utils";
 import type * as BabelT from "babel__core";
 import { parseTsConstantsModule } from "../api/tsParser";
@@ -26,7 +27,14 @@ export default declare((babel, options, cwd) => {
     );
   }
 
-  const flags = parseTsConstantsModule(options.flagsModule);
+  // When the runtime module diverges per platform, the CLI/config-plugin emit
+  // `<stem>.ios.ts` / `<stem>.android.ts` instead of the single file. Pick the
+  // file for the platform Metro is compiling for, falling back to the single
+  // file when no platform-specific module exists.
+  const platform = babel.caller((caller: any) => caller?.platform);
+  const flagsModulePath = resolveFlagsModulePath(options.flagsModule, platform);
+
+  const flags = parseTsConstantsModule(flagsModulePath);
   const baseModulePath = options.flagsModule
     .split("/")
     .filter((segment) => segment !== ".." && segment !== ".")
@@ -70,3 +78,16 @@ export default declare((babel, options, cwd) => {
     }
   }
 });
+
+function resolveFlagsModulePath(
+  flagsModule: string,
+  platform?: string
+): string {
+  if (platform === "ios" || platform === "android") {
+    const platformModule = flagsModule.replace(/\.ts$/, `.${platform}.ts`);
+    if (existsSync(platformModule)) {
+      return platformModule;
+    }
+  }
+  return flagsModule;
+}

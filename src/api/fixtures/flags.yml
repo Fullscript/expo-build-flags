@@ -22,3 +22,15 @@ flags:
       bundleId:
         - com.my.app.apple
         - com.my.app.android
+  platformInvertableFeature:
+    value: false
+    invertFor:
+      platform:
+        - ios
+  combinedInvertableFeature:
+    value: false
+    invertFor:
+      bundleId:
+        - com.my.app.special
+      platform:
+        - android

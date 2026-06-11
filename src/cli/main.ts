@@ -1,8 +1,11 @@
 import YAML from "yaml";
 import { existsSync } from "fs";
 import { readFile, writeFile } from "fs/promises";
-import { BuildFlags } from "../api/BuildFlags";
 import { generateOverrides } from "../api/generateOverrides";
+import { readConfig } from "../api/readConfig";
+import { saveFlags } from "../api/writeFlags";
+import { resolve, hasBundleIdInversions } from "../api/resolve";
+import { readExpoConfig } from "../api/expoConfig";
 
 export const shouldSkip = (envKey: string | undefined): boolean => {
   if (envKey && process.env[envKey] !== undefined) {
@@ -75,8 +78,7 @@ const initFlagsFile = async () => {
   console.log("");
   await writeFile("flags.yml", YAML.stringify(baseFlags, null, 2));
   console.log("Wrote default flags to flags.yml in the current directory");
-  const flags = new BuildFlags(baseFlags.flags);
-  await flags.save(baseFlags.mergePath);
+  await saveFlags(baseFlags.mergePath, resolve(baseFlags.flags));
   if (gitignoreExists) {
     const gitignore = await readFile(".gitignore", { encoding: "utf-8" });
     await writeFile(
@@ -89,6 +91,14 @@ const initFlagsFile = async () => {
       gitignoreExists ? " (and added this to your .gitignore)" : ""
     }`
   );
+};
+
+const resolveExpoConfigIfNeeded = async () => {
+  const { flags } = await readConfig();
+  if (!hasBundleIdInversions(flags)) {
+    return null;
+  }
+  return readExpoConfig();
 };
 
 const run = async () => {
@@ -105,16 +115,13 @@ const run = async () => {
     return;
   }
 
-  if (command === "override") {
-    await generateOverrides({ flagsToEnable, flagsToDisable });
-    return;
-  }
-
-  if (command === "ota-override") {
+  if (command === "override" || command === "ota-override") {
+    const expoConfig = await resolveExpoConfigIfNeeded();
     await generateOverrides({
       flagsToEnable,
       flagsToDisable,
-      enableBranchFlags: true,
+      enableBranchFlags: command === "ota-override",
+      expoConfig: expoConfig ?? undefined,
     });
     return;
   }
