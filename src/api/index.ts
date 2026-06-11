@@ -12,6 +12,7 @@ import {
   hasBundleIdInversions,
 } from "./resolve";
 import { readConfig, resolveModuleExclusions } from "./readConfig";
+import { formatFlagsYaml, formatFlagsFile } from "./formatFlags";
 
 export {
   generateOverrides,
@@ -25,4 +26,6 @@ export {
   hasBundleIdInversions,
   readConfig,
   resolveModuleExclusions,
+  formatFlagsYaml,
+  formatFlagsFile,
 };

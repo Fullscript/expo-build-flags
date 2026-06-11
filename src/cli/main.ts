@@ -6,6 +6,7 @@ import { readConfig } from "../api/readConfig";
 import { saveFlags } from "../api/writeFlags";
 import { resolve, hasBundleIdInversions } from "../api/resolve";
 import { readExpoConfig } from "../api/expoConfig";
+import { formatFlagsFile } from "../api/formatFlags";
 
 export const shouldSkip = (envKey: string | undefined): boolean => {
   if (envKey && process.env[envKey] !== undefined) {
@@ -52,6 +53,7 @@ const printHelp = (command?: string) => {
   console.log(`Usage: build-flags [command] [options] [flags]
   Commands:
     init          Initialize flags.yml and buildFlags.ts for the project in the current directory
+    format        Sort the keys of the flags object in flags.yml alphabetically, in place
     override      Override default flags with provided flag arguments: +flag to enable, -flag to disable
     ota-override  Override default flags like "override" but also consider branch matching rules
 
@@ -112,6 +114,12 @@ const run = async () => {
   
   if (command === "init") {
     await initFlagsFile();
+    return;
+  }
+
+  if (command === "format") {
+    await formatFlagsFile();
+    console.log("Sorted flags in flags.yml");
     return;
   }
 
