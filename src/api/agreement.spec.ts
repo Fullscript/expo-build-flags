@@ -64,13 +64,12 @@ describe("CLI <-> config-plugin resolution agreement", () => {
     const ios = resolve(parseSpec(), { expoConfig, platform: "ios" });
     const android = resolve(parseSpec(), { expoConfig, platform: "android" });
 
-    // base default-on everywhere; bundleScoped inverted by matching apple id on
-    // both platform passes (bundleId match is platform-agnostic); iosOnly only on ios.
+    // base default-on everywhere; bundleScoped inverts only on the ios pass,
+    // since the apple id matches ios.bundleIdentifier but not android.package;
+    // iosOnly only on ios.
     expect(enabledNames(ios).sort()).toEqual(
       ["base", "bundleScoped", "iosOnly"].sort()
     );
-    expect(enabledNames(android).sort()).toEqual(
-      ["base", "bundleScoped"].sort()
-    );
+    expect(enabledNames(android).sort()).toEqual(["base"].sort());
   });
 });

@@ -23,10 +23,15 @@ const shouldInvert = (
   ctx: ResolveContext
 ): boolean => {
   if (invertFor.bundleId && ctx.expoConfig) {
-    const bundleIds = [
-      ctx.expoConfig.ios?.bundleIdentifier,
-      ctx.expoConfig.android?.package,
-    ].filter(Boolean) as string[];
+    const iosId = ctx.expoConfig.ios?.bundleIdentifier;
+    const androidId = ctx.expoConfig.android?.package;
+    const bundleIds = (
+      ctx.platform === "ios"
+        ? [iosId]
+        : ctx.platform === "android"
+          ? [androidId]
+          : [iosId, androidId]
+    ).filter(Boolean) as string[];
     if (
       bundleIds.length &&
       invertFor.bundleId.some((id) => bundleIds.includes(id))

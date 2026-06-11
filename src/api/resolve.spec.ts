@@ -63,6 +63,19 @@ describe("resolve", () => {
     ).toBe(true);
   });
 
+  it("scopes bundleId inversion to the resolving platform", () => {
+    const expoConfig = {
+      ios: { bundleIdentifier: "com.my.app.dev" },
+      android: { package: "com.my.app.android" },
+    } as any;
+    expect(
+      resolve(spec, { platform: "ios", expoConfig }).bundleFlag.value
+    ).toBe(false);
+    expect(
+      resolve(spec, { platform: "android", expoConfig }).bundleFlag.value
+    ).toBe(true);
+  });
+
   it("inverts platform flags only for the matching platform", () => {
     expect(resolve(spec, { platform: "android" }).iosFlag.value).toBe(false);
     expect(resolve(spec, { platform: "ios" }).iosFlag.value).toBe(true);
