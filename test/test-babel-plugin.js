@@ -1,7 +1,7 @@
 const fs = require("fs");
 const cp = require("child_process");
 
-const isExpo55 = (process.env.EXPO_SDK_TARGET = "55");
+const isExpo55 = process.env.EXPO_SDK_TARGET === "55";
 
 const fallbackBabelConfig = `
 module.exports = function (api) {
