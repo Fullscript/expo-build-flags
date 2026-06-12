@@ -40,7 +40,8 @@
     "typescript": "*"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc --project tsconfig.build.json",
+    "typecheck": "tsc",
     "test": "npm run test:unit && EXPO_SDK_TARGET=55 ./test/run-integration.sh",
     "test:unit": "./node_modules/.bin/jest",
     "prepare": "npm run build"

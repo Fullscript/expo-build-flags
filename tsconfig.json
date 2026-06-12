@@ -1,17 +1,9 @@
 {
   "extends": "@tsconfig/node18/tsconfig.json",
   "compilerOptions": {
-    "declaration": true,
-    "outDir": "build",
-    "rootDir": "src",
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "noEmit": true
   },
-  "exclude": [
-    "node_modules",
-    "build",
-    "example",
-    "test",
-    "src/**/*.spec.ts",
-    "docs"
-  ]
+  "include": ["src/**/*.ts", "test/**/*.ts"],
+  "exclude": ["node_modules", "build", "example", "docs"]
 }

@@ -24,9 +24,9 @@ describe("resolveModuleExclusions", () => {
     });
     jest.spyOn(fs, "readFile").mockImplementation((path: any) => {
       if (path.endsWith(".git/HEAD")) {
-        return "ref: refs/heads/feature-in-dev-build-branch";
+        return Promise.resolve("ref: refs/heads/feature-in-dev-build-branch");
       }
-      throw new Error(`readFile: path not mocked: ${path}`);
+      return Promise.reject(new Error(`readFile: path not mocked: ${path}`));
     });
   });
 
