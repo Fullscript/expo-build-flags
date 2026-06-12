@@ -1,6 +1,7 @@
 import type { ExpoConfig } from "@expo/config-types";
-import { readConfig } from "./readConfig";
+import { readConfig, readConfigSync } from "./readConfig";
 import { getCIBranch } from "./ciHelpers";
+import { parseEnvFlags } from "../config-plugin/parseEnvFlags";
 import { resolve, enabledNames, ResolveContext } from "./resolve";
 import { saveFlags, savePlatformFlags } from "./writeFlags";
 import { FlagMap, Platform } from "./types";
@@ -21,6 +22,19 @@ const baseContext = (
   envEnable: opts.flagsToEnable,
   envDisable: opts.flagsToDisable,
 });
+
+/**
+ * Default flagsToEnable / flagsToDisable to the parsed EXPO_BUILD_FLAGS env var
+ * when not explicitly provided, so resolve* callers pick up the env override.
+ */
+const withEnvFlagDefaults = (opts: OverrideOptions): OverrideOptions => {
+  const envFlags = parseEnvFlags();
+  return {
+    ...opts,
+    flagsToEnable: opts.flagsToEnable ?? envFlags.flagsToEnable,
+    flagsToDisable: opts.flagsToDisable ?? envFlags.flagsToDisable,
+  };
+};
 
 /**
  * Resolve the runtime flags from flags.yml and write the runtime module(s).
@@ -45,13 +59,18 @@ export const generateSharedOverrides = async (opts: OverrideOptions = {}) => {
   await saveFlags(mergePath, resolved);
 };
 
-/** Names of flags that resolve enabled for a given platform/context. */
+/**
+ * Names of flags that resolve enabled for a given platform/context. When
+ * flagsToEnable / flagsToDisable are not passed, they default to the parsed
+ * EXPO_BUILD_FLAGS env var.
+ */
 export const resolveEnabledFlagNames = async ({
   platform,
   ...opts
 }: OverrideOptions & { platform?: Platform } = {}): Promise<string[]> => {
   const { flags: spec } = await readConfig();
-  const resolved = resolve(spec, { ...baseContext(opts), platform });
+  const ctx = baseContext(withEnvFlagDefaults(opts));
+  const resolved = resolve(spec, { ...ctx, platform });
   return enabledNames(resolved);
 };
 
@@ -62,4 +81,19 @@ export const resolveFlags = async ({
 }: OverrideOptions & { platform?: Platform } = {}): Promise<FlagMap> => {
   const { flags: spec } = await readConfig();
   return resolve(spec, { ...baseContext(opts), platform });
+};
+
+/**
+ * Synchronous variant of resolveEnabledFlagNames for callers that can't await,
+ * such as Expo's app.config.ts. When flagsToEnable / flagsToDisable are not
+ * passed, they default to the parsed EXPO_BUILD_FLAGS env var.
+ */
+export const resolveEnabledFlagNamesSync = ({
+  platform,
+  ...opts
+}: OverrideOptions & { platform?: Platform } = {}): string[] => {
+  const { flags: spec } = readConfigSync();
+  const ctx = baseContext(withEnvFlagDefaults(opts));
+  const resolved = resolve(spec, { ...ctx, platform });
+  return enabledNames(resolved);
 };

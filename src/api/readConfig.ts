@@ -1,33 +1,49 @@
 import YAML from "yaml";
+import { readFileSync } from "fs";
 import { readFile } from "fs/promises";
 import { FlagMap, FlagsConfig } from "./types";
+
+const parseConfig = (flags: string): FlagsConfig => {
+  const config = YAML.parse(flags);
+  if (config.mergePath === undefined || config.flags === undefined) {
+    throw new Error(
+      "Invalid flags.yml format, expected mergePath and flags as root keys"
+    );
+  }
+
+  Object.keys(config.flags).forEach((flag) => {
+    if (typeof config.flags[flag]?.value !== "boolean") {
+      throw new Error(`Flag ${flag} does not have default value set`);
+    }
+
+    if (
+      config.flags[flag].ota &&
+      !Array.isArray(config.flags[flag].ota.branches)
+    ) {
+      throw new Error(
+        `Flag ${flag} has an OTA filter applied with invalid branches type`
+      );
+    }
+  });
+
+  return config;
+};
 
 export const readConfig = async (): Promise<FlagsConfig> => {
   try {
     const flags = await readFile("flags.yml", { encoding: "utf-8" });
-    const config = YAML.parse(flags);
-    if (config.mergePath === undefined || config.flags === undefined) {
-      throw new Error(
-        "Invalid flags.yml format, expected mergePath and flags as root keys"
-      );
-    }
+    return parseConfig(flags);
+  } catch (e) {
+    console.error("Error reading flags.yml");
+    console.error(e);
+    process.exit(1);
+  }
+};
 
-    Object.keys(config.flags).forEach((flag) => {
-      if (typeof config.flags[flag]?.value !== "boolean") {
-        throw new Error(`Flag ${flag} does not have default value set`);
-      }
-
-      if (
-        config.flags[flag].ota &&
-        !Array.isArray(config.flags[flag].ota.branches)
-      ) {
-        throw new Error(
-          `Flag ${flag} has an OTA filter applied with invalid branches type`
-        );
-      }
-    });
-
-    return config;
+export const readConfigSync = (): FlagsConfig => {
+  try {
+    const flags = readFileSync("flags.yml", { encoding: "utf-8" });
+    return parseConfig(flags);
   } catch (e) {
     console.error("Error reading flags.yml");
     console.error(e);

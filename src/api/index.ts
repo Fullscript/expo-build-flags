@@ -2,6 +2,7 @@ import {
   generateOverrides,
   generateSharedOverrides,
   resolveEnabledFlagNames,
+  resolveEnabledFlagNamesSync,
   resolveFlags,
 } from "./generateOverrides";
 import {
@@ -18,6 +19,7 @@ export {
   generateOverrides,
   generateSharedOverrides,
   resolveEnabledFlagNames,
+  resolveEnabledFlagNamesSync,
   resolveFlags,
   resolve,
   enabledNames,
